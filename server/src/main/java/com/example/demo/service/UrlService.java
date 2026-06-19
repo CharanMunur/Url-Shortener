@@ -75,4 +75,33 @@ public class UrlService {
                         url.getExpiresAt()))
                 .toList();
     }
+
+    public boolean toggleUrlStatus(String shortCode) {
+        User user = authUtils.getCurrentUser();
+
+        Url url = urlRepository.findByShortCode(shortCode)
+                .orElseThrow(() -> new RuntimeException("Short code not found"));
+
+        if (!url.getUser().getId().equals(user.getId())) {
+            throw new RuntimeException("You dont own this url");
+        }
+
+        url.setActive(!url.isActive());
+        urlRepository.save(url);
+
+        return url.isActive();
+    }
+
+    public void deleteUrl(String shortCode) {
+        User user = authUtils.getCurrentUser();
+
+        Url url = urlRepository.findByShortCode(shortCode)
+                .orElseThrow(() -> new RuntimeException("Short code not found"));
+
+        if (!url.getUser().getId().equals(user.getId())) {
+            throw new RuntimeException("You dont own this url");
+        }
+
+        urlRepository.delete(url);
+    }
 }
