@@ -5,22 +5,32 @@ import com.example.demo.dto.UrlResponse;
 import com.example.demo.model.Url;
 import com.example.demo.repository.UrlRepository;
 import com.example.demo.utils.Base62Encoder;
+import com.example.demo.utils.AuthUtils;
 import java.time.LocalDateTime;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class UrlService {
 
     private final UrlRepository urlRepository;
+    private final AuthUtils authUtils;
 
-    public UrlService(UrlRepository urlRepository) {
+    public UrlService(UrlRepository urlRepository, AuthUtils authUtils) {
         this.urlRepository = urlRepository;
+        this.authUtils = authUtils;
     }
 
+    @Transactional
     public UrlResponse shortenUrl(UrlRequest request) {
         String originalUrl = request.getOriginalUrl();
 
-        Url url = Url.builder().originalUrl(originalUrl).createdAt(LocalDateTime.now()).build();
+        Url url = Url.builder()
+            .originalUrl(originalUrl)
+            .createdAt(LocalDateTime.now())
+            .expiresAt(request.getExpiresAt())
+            .user(authUtils.getCurrentUser())
+            .build();
 
         Url saved = urlRepository.save(url);
 

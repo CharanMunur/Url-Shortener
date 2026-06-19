@@ -1,7 +1,6 @@
 package com.example.demo.model;
 
 import java.time.LocalDateTime;
-
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
@@ -14,8 +13,8 @@ import jakarta.persistence.Table;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
-import lombok.NoArgsConstructor;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 @Entity
@@ -24,28 +23,22 @@ import lombok.Setter;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-@Table(name = "url_mappings")
-public class Url {
+@Table(name = "clicks")
+public class Click {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false, length = 2048)
-    private String originalUrl;
-
-    @Column(unique = true, length = 7)
-    private String shortCode;
-
-    @Column(nullable = false)
-    private LocalDateTime createdAt;
-
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id")
-    private User user;
+    @JoinColumn(name = "short_code", referencedColumnName = "shortCode", nullable = false)
+    private Url url;
 
     @Column(nullable = false)
-    @Builder.Default
-    private boolean isActive = true;
+    private LocalDateTime clickedAt;
 
-    private LocalDateTime expiresAt;
+    @Column(length = 45)
+    private String ipAddress;
+
+    @Column(length = 512)
+    private String userAgent;
 }
