@@ -5,11 +5,10 @@ Spring Boot backend for the URL shortener.
 ## Run
 
 ```bash
-set -a
-source .env
-set +a
 ./gradlew bootRun
 ```
+
+`application.properties` imports `.env` automatically, so the local file only needs valid key/value pairs.
 
 ## Environment
 
@@ -19,6 +18,7 @@ Copy `.env.example` to `.env` and fill in:
 - `REDIS_HOST`
 - `REDIS_PORT`
 - `REDIS_PASSWORD`
+- `JWT_SECRET`
 
 ## API
 
@@ -29,4 +29,3 @@ Copy `.env.example` to `.env` and fill in:
 
 - PostgreSQL for URL mappings
 - Redis for caching / future use
-
