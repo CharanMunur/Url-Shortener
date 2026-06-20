@@ -31,6 +31,7 @@ Copy `.env.example` to `.env` and fill in:
 - `GET /urls` - list the current user's URLs, requires JWT
 - `PATCH /urls/{shortCode}/toggle` - toggle active state for a URL you own, requires JWT
 - `DELETE /urls/{shortCode}` - delete a URL you own, requires JWT
+- `GET /urls/{shortCode}/analytics` - view click analytics for a URL you own, requires JWT
 
 ### Shorten Request
 
@@ -46,7 +47,9 @@ Copy `.env.example` to `.env` and fill in:
 - New URLs are created active by default
 - URLs expire 30 days after creation
 - Redirects fail for disabled or expired URLs
+- Redirects are logged with click time, IP address, and user agent
 - Toggle and delete are owner-only actions
+- Analytics currently include total clicks, recent clicks, browser breakdown, and OS breakdown
 
 ### Auth Notes
 
@@ -62,7 +65,6 @@ Copy `.env.example` to `.env` and fill in:
 The repository already has the data structures for this next layer, but the endpoints are not built yet:
 
 - Redis caching / key-value use
-- click logging on redirect
 - analytics endpoints
   - total clicks per URL
   - clicks over time
