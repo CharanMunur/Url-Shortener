@@ -8,7 +8,9 @@ import static org.mockito.Mockito.when;
 import com.example.demo.model.Url;
 import com.example.demo.model.User;
 import com.example.demo.repository.UrlRepository;
+import com.example.demo.repository.ClickRepository;
 import com.example.demo.utils.AuthUtils;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import java.time.LocalDateTime;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
@@ -22,6 +24,12 @@ class UrlServiceTest {
 
     @Mock
     private UrlRepository urlRepository;
+
+    @Mock
+    private ClickRepository clickRepository;
+
+    @Mock
+    private StringRedisTemplate redisTemplate;
 
     @Mock
     private AuthUtils authUtils;

@@ -2,8 +2,6 @@ import { useEffect, useState, useCallback } from "react"
 import {
   Copy,
   ExternalLink,
-  ToggleLeft,
-  ToggleRight,
   Trash2,
   BarChart2,
   Loader2,
@@ -13,6 +11,7 @@ import {
   XCircle,
   Clock,
 } from "lucide-react"
+import { Switch } from "@/components/ui/switch"
 import { useAuth } from "@/providers/auth-provider"
 import { getUserUrls, toggleUrl, deleteUrl } from "@/lib/urls-api"
 import { ApiError } from "@/lib/api"
@@ -20,14 +19,24 @@ import { extractShortCode, formatRelativeTime } from "@/lib/url"
 import type { UrlResponse } from "@/types/api"
 
 // Enriched URL with extracted short code so we never re-derive it
-type EnrichedUrl = UrlResponse & { shortCode: string }
+type EnrichedUrl = UrlResponse & { shortCode: string; shortUrl: string }
 
 interface MyLinksPageProps {
   onViewAnalytics: (shortCode: string) => void
 }
 
 function enrichUrls(urls: UrlResponse[]): EnrichedUrl[] {
-  return urls.map((u) => ({ ...u, shortCode: extractShortCode(u.shortUrl) }))
+  return urls.map((u) => {
+    const shortUrl = u.shortUrl || u.shortCode || ""
+    const shortCode = extractShortCode(shortUrl)
+    const active = u.isActive !== undefined ? u.isActive : (u as any).active
+    return {
+      ...u,
+      shortUrl,
+      shortCode,
+      isActive: !!active,
+    }
+  })
 }
 
 export function MyLinksPage({ onViewAnalytics }: MyLinksPageProps) {
@@ -36,9 +45,9 @@ export function MyLinksPage({ onViewAnalytics }: MyLinksPageProps) {
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState("")
   const [copiedUrl, setCopiedUrl] = useState<string | null>(null)
-  const [togglingCode, setTogglingCode] = useState<string | null>(null)
-  const [deletingCode, setDeletingCode] = useState<string | null>(null)
-  const [confirmDelete, setConfirmDelete] = useState<string | null>(null)
+  const [togglingUrl, setTogglingUrl] = useState<string | null>(null)
+  const [deletingUrl, setDeletingUrl] = useState<string | null>(null)
+  const [confirmDeleteUrl, setConfirmDeleteUrl] = useState<string | null>(null)
 
   const load = useCallback(async () => {
     setIsLoading(true)
@@ -59,30 +68,30 @@ export function MyLinksPage({ onViewAnalytics }: MyLinksPageProps) {
 
   async function handleToggle(url: EnrichedUrl) {
     if (!url.shortCode) return
-    setTogglingCode(url.shortCode)
+    setTogglingUrl(url.shortUrl)
     try {
       const newActive = await toggleUrl(url.shortCode, token!)
       setUrls((prev) =>
-        prev.map((u) => (u.shortCode === url.shortCode ? { ...u, isActive: newActive } : u))
+        prev.map((u) => (u.shortUrl === url.shortUrl ? { ...u, isActive: newActive } : u))
       )
     } catch {
       // silently fail; refresh will sync
     } finally {
-      setTogglingCode(null)
+      setTogglingUrl(null)
     }
   }
 
   async function handleDelete(url: EnrichedUrl) {
     if (!url.shortCode) return
-    setDeletingCode(url.shortCode)
+    setDeletingUrl(url.shortUrl)
     try {
       await deleteUrl(url.shortCode, token!)
-      setUrls((prev) => prev.filter((u) => u.shortCode !== url.shortCode))
+      setUrls((prev) => prev.filter((u) => u.shortUrl !== url.shortUrl))
     } catch {
       // silently fail
     } finally {
-      setDeletingCode(null)
-      setConfirmDelete(null)
+      setDeletingUrl(null)
+      setConfirmDeleteUrl(null)
     }
   }
 
@@ -142,10 +151,10 @@ export function MyLinksPage({ onViewAnalytics }: MyLinksPageProps) {
       ) : (
         <div className="rounded-xl border border-border bg-card overflow-hidden shadow-sm">
           {/* Table header - desktop only */}
-          <div className="hidden md:grid md:grid-cols-[6rem_1fr_6rem_7rem_7rem_auto] gap-4 px-5 py-3 border-b border-border bg-muted/40 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+          <div className="hidden md:grid md:grid-cols-[6rem_1fr_5rem_8.5rem_8rem_9.5rem] gap-4 px-5 py-3 border-b border-border bg-muted/40 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
             <span>Code</span>
             <span>Short URL</span>
-            <span className="text-center">Clicks</span>
+            <span className="text-right pr-2">Clicks</span>
             <span className="text-center">Status</span>
             <span>Expires</span>
             <span>Actions</span>
@@ -153,14 +162,14 @@ export function MyLinksPage({ onViewAnalytics }: MyLinksPageProps) {
 
           {/* Rows */}
           <div className="divide-y divide-border">
-            {urls.map((url) => {
+            {urls.map((url, i) => {
               const isExpired = url.expiresAt && new Date(url.expiresAt) < new Date()
               const isActive = url.isActive && !isExpired
 
               return (
                 <div
-                  key={url.shortUrl || url.shortCode}
-                  className="flex flex-col md:grid md:grid-cols-[6rem_1fr_6rem_7rem_7rem_auto] gap-2 md:gap-4 px-5 py-4 items-start md:items-center hover:bg-muted/20 transition-colors"
+                  key={`${url.shortUrl || url.shortCode || "link"}-${i}`}
+                  className="flex flex-col md:grid md:grid-cols-[6rem_1fr_5rem_8.5rem_8rem_9.5rem] gap-2 md:gap-4 px-5 py-4 items-start md:items-center hover:bg-muted/20 transition-colors"
                 >
                   {/* Short code */}
                   <div className="shrink-0">
@@ -182,21 +191,27 @@ export function MyLinksPage({ onViewAnalytics }: MyLinksPageProps) {
                   </div>
 
                   {/* Clicks */}
-                  <div className="flex md:justify-center items-center gap-1">
+                  <div className="w-full md:w-auto md:text-right md:pr-2">
                     <span className="text-sm font-semibold tabular-nums">{url.totalClicks.toLocaleString()}</span>
-                    <span className="text-xs text-muted-foreground hidden md:inline">clicks</span>
+                    <span className="text-xs text-muted-foreground md:hidden ml-1">clicks</span>
                   </div>
 
-                  {/* Status badge */}
-                  <div className="flex md:justify-center">
-                    {isActive ? (
-                      <span className="inline-flex items-center gap-1 rounded-full bg-green-500/10 border border-green-500/20 px-2 py-0.5 text-xs font-medium text-green-600 dark:text-green-400 whitespace-nowrap">
-                        <CheckCircle2 className="h-3 w-3" />
+                  {/* Status toggle field */}
+                  <div className="flex md:justify-center items-center gap-2">
+                    <Switch
+                      checked={isActive}
+                      onCheckedChange={() => handleToggle(url)}
+                      disabled={togglingUrl === url.shortUrl || !!isExpired || !url.shortCode}
+                      aria-label="Toggle URL active status"
+                    />
+                    {togglingUrl === url.shortUrl ? (
+                      <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" />
+                    ) : isActive ? (
+                      <span className="text-xs font-semibold text-green-600 dark:text-green-400">
                         Active
                       </span>
                     ) : (
-                      <span className="inline-flex items-center gap-1 rounded-full bg-muted border border-border px-2 py-0.5 text-xs font-medium text-muted-foreground whitespace-nowrap">
-                        <XCircle className="h-3 w-3" />
+                      <span className="text-xs font-medium text-muted-foreground">
                         {isExpired ? "Expired" : "Off"}
                       </span>
                     )}
@@ -234,33 +249,21 @@ export function MyLinksPage({ onViewAnalytics }: MyLinksPageProps) {
                       <ExternalLink className="h-4 w-4" />
                     </a>
 
-                    <IconBtn
-                      title={url.isActive ? "Disable" : "Enable"}
-                      onClick={() => handleToggle(url)}
-                      disabled={togglingCode === url.shortCode || !!isExpired || !url.shortCode}
-                    >
-                      {togglingCode === url.shortCode
-                        ? <Loader2 className="h-4 w-4 animate-spin" />
-                        : url.isActive
-                          ? <ToggleRight className="h-4 w-4 text-green-500" />
-                          : <ToggleLeft className="h-4 w-4" />}
-                    </IconBtn>
-
-                    {confirmDelete === url.shortCode ? (
-                      <div className="flex items-center gap-1 ml-1">
+                    {confirmDeleteUrl === url.shortUrl ? (
+                      <div className="flex items-center gap-1 ml-1 shrink-0">
                         <button
                           type="button"
                           onClick={() => handleDelete(url)}
-                          disabled={deletingCode === url.shortCode}
+                          disabled={deletingUrl === url.shortUrl}
                           className="text-xs text-destructive hover:underline font-medium px-1"
                         >
-                          {deletingCode === url.shortCode
+                          {deletingUrl === url.shortUrl
                             ? <Loader2 className="h-3 w-3 animate-spin" />
                             : "Confirm"}
                         </button>
                         <button
                           type="button"
-                          onClick={() => setConfirmDelete(null)}
+                          onClick={() => setConfirmDeleteUrl(null)}
                           className="text-xs text-muted-foreground hover:underline px-1"
                         >
                           Cancel
@@ -269,8 +272,8 @@ export function MyLinksPage({ onViewAnalytics }: MyLinksPageProps) {
                     ) : (
                       <IconBtn
                         title="Delete"
-                        onClick={() => setConfirmDelete(url.shortCode)}
-                        className="hover:bg-destructive/10 hover:text-destructive"
+                        onClick={() => setConfirmDeleteUrl(url.shortUrl)}
+                        className="hover:bg-destructive/10 hover:text-destructive animate-in fade-in duration-200"
                       >
                         <Trash2 className="h-4 w-4" />
                       </IconBtn>

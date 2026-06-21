@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from "react"
+import { useEffect, useState, useCallback, useMemo } from "react"
 import { useAuth } from "@/providers/auth-provider"
 import { getUserUrls, getUrlAnalytics } from "@/lib/urls-api"
 import { ApiError } from "@/lib/api"
@@ -14,7 +14,15 @@ import {
   ChevronDown,
   Link2,
   BarChart3,
+  Calendar,
 } from "lucide-react"
+import { Area, AreaChart, CartesianGrid, XAxis, YAxis, Pie, PieChart, Bar, BarChart } from "recharts"
+import {
+  ChartContainer,
+  ChartTooltip,
+  ChartTooltipContent,
+} from "@/components/ui/chart"
+import type { ChartConfig } from "@/components/ui/chart"
 
 interface AnalyticsPageProps {
   initialShortCode?: string | null
@@ -28,6 +36,60 @@ export function AnalyticsPage({ initialShortCode }: AnalyticsPageProps) {
   const [isLoadingUrls, setIsLoadingUrls] = useState(true)
   const [isLoadingAnalytics, setIsLoadingAnalytics] = useState(false)
   const [error, setError] = useState("")
+  const [timeRange, setTimeRange] = useState<"7d" | "30d" | "all">("7d")
+
+  const chartData = useMemo(() => {
+    if (!analytics?.clicksByDate) return []
+
+    const data = []
+    const today = new Date()
+    const days = timeRange === "7d" ? 7 : timeRange === "30d" ? 30 : 0
+
+    if (days > 0) {
+      for (let i = days - 1; i >= 0; i--) {
+        const d = new Date()
+        d.setDate(today.getDate() - i)
+        const dateStr = d.toISOString().split("T")[0]
+        const label = d.toLocaleDateString(undefined, {
+          month: "short",
+          day: "numeric",
+        })
+        data.push({
+          date: dateStr,
+          label,
+          clicks: analytics.clicksByDate[dateStr] || 0,
+        })
+      }
+    } else {
+      const dates = Object.keys(analytics.clicksByDate).sort()
+      if (dates.length === 0) return []
+
+      const minDate = new Date(dates[0])
+      const maxDate = new Date()
+      const curDate = new Date(minDate)
+      while (curDate <= maxDate) {
+        const dateStr = curDate.toISOString().split("T")[0]
+        const label = curDate.toLocaleDateString(undefined, {
+          month: "short",
+          day: "numeric",
+        })
+        data.push({
+          date: dateStr,
+          label,
+          clicks: analytics.clicksByDate[dateStr] || 0,
+        })
+        curDate.setDate(curDate.getDate() + 1)
+      }
+    }
+    return data
+  }, [analytics, timeRange])
+
+  const chartConfig = {
+    clicks: {
+      label: "Clicks",
+      color: "oklch(0.4880 0.2430 264.3760)",
+    },
+  } satisfies ChartConfig
 
   useEffect(() => {
     ;(async () => {
@@ -76,6 +138,8 @@ export function AnalyticsPage({ initialShortCode }: AnalyticsPageProps) {
   const browserEntries = analytics ? topEntries(analytics.browserBreakdown) : []
   const osEntries = analytics ? topEntries(analytics.osBreakdown) : []
   const total = analytics?.totalClicks ?? 0
+
+
 
   return (
     <div className="space-y-6 py-8 w-full">
@@ -173,6 +237,93 @@ export function AnalyticsPage({ initialShortCode }: AnalyticsPageProps) {
               label="Recent Clicks"
               value={(analytics.lastClicks?.length ?? 0).toString()}
             />
+          </div>
+
+          {/* Clicks over time chart */}
+          <div className="rounded-xl border border-border bg-card p-5">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+              <div>
+                <h3 className="font-semibold text-base">Clicks traffic</h3>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  Timeline of clicks registered for this link.
+                </p>
+              </div>
+
+              {/* Time range selector */}
+              <div className="flex items-center gap-1 bg-muted p-0.5 rounded-lg self-start">
+                <button
+                  onClick={() => setTimeRange("7d")}
+                  className={`px-2.5 py-1 text-xs font-medium rounded-md transition-all ${
+                    timeRange === "7d"
+                      ? "bg-card text-foreground shadow-sm"
+                      : "text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  7 Days
+                </button>
+                <button
+                  onClick={() => setTimeRange("30d")}
+                  className={`px-2.5 py-1 text-xs font-medium rounded-md transition-all ${
+                    timeRange === "30d"
+                      ? "bg-card text-foreground shadow-sm"
+                      : "text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  30 Days
+                </button>
+                <button
+                  onClick={() => setTimeRange("all")}
+                  className={`px-2.5 py-1 text-xs font-medium rounded-md transition-all ${
+                    timeRange === "all"
+                      ? "bg-card text-foreground shadow-sm"
+                      : "text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  All Time
+                </button>
+              </div>
+            </div>
+
+            <div className="h-[250px] w-full">
+              <ChartContainer config={chartConfig} className="h-full w-full">
+                <AreaChart
+                  data={chartData}
+                  margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
+                >
+                  <defs>
+                    <linearGradient id="colorClicks" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="var(--color-clicks)" stopOpacity={0.2}/>
+                      <stop offset="95%" stopColor="var(--color-clicks)" stopOpacity={0}/>
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} className="stroke-muted/30" />
+                  <XAxis
+                    dataKey="label"
+                    tickLine={false}
+                    axisLine={false}
+                    className="text-[10px]"
+                  />
+                  <YAxis
+                    tickLine={false}
+                    axisLine={false}
+                    allowDecimals={false}
+                    className="text-[10px]"
+                  />
+                  <ChartTooltip
+                    cursor={{ stroke: "var(--color-clicks)", strokeWidth: 1, strokeDasharray: "4 4" }}
+                    content={<ChartTooltipContent />}
+                  />
+                  <Area
+                    type="monotone"
+                    dataKey="clicks"
+                    stroke="var(--color-clicks)"
+                    strokeWidth={2}
+                    fillOpacity={1}
+                    fill="url(#colorClicks)"
+                  />
+                </AreaChart>
+              </ChartContainer>
+            </div>
           </div>
 
           {/* Browser + OS breakdown — Umami style */}

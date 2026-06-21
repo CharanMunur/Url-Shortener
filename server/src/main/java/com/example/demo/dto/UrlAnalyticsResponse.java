@@ -17,4 +17,5 @@ public class UrlAnalyticsResponse {
     private List<ClickDetailDTO> lastClicks;
     private Map<String, Long> browserBreakdown;
     private Map<String, Long> osBreakdown;
+    private Map<String, Long> clicksByDate;
 }

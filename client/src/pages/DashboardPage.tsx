@@ -38,7 +38,8 @@ export function DashboardPage({ onNavigate }: DashboardPageProps) {
 
   const activeUrls = urls.filter((u) => {
     const expired = u.expiresAt && new Date(u.expiresAt) < new Date()
-    return u.isActive && !expired
+    const active = u.isActive !== undefined ? u.isActive : (u as any).active
+    return !!active && !expired
   })
   const expiredUrls = urls.filter(
     (u) => u.expiresAt && new Date(u.expiresAt) < new Date()
@@ -159,17 +160,17 @@ export function DashboardPage({ onNavigate }: DashboardPageProps) {
           </div>
         ) : (
           <div className="rounded-xl border border-border bg-card overflow-hidden shadow-sm divide-y divide-border">
-            {recentUrls.map((url) => {
+            {recentUrls.map((url, i) => {
               const isExpired = url.expiresAt && new Date(url.expiresAt) < new Date()
-              const shortCode = extractShortCode(url.shortUrl)
+              const shortCode = url.shortCode || extractShortCode(url.shortUrl) || ""
               return (
                 <div
-                  key={url.shortUrl}
+                  key={`${url.shortUrl || url.shortCode || "url"}-${i}`}
                   className="flex items-center gap-3 px-4 py-3 hover:bg-muted/30 transition-colors"
                 >
                   <div
                     className={`h-2 w-2 rounded-full shrink-0 ${
-                      url.isActive && !isExpired
+                      (url.isActive !== undefined ? url.isActive : (url as any).active) && !isExpired
                         ? "bg-green-500"
                         : "bg-muted-foreground/40"
                     }`}

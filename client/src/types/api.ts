@@ -14,7 +14,8 @@ export type UrlRequest = {
 }
 
 export type UrlResponse = {
-  shortUrl: string
+  shortUrl?: string
+  shortCode?: string
   totalClicks: number
   isActive: boolean
   expiresAt: string
@@ -33,4 +34,5 @@ export type UrlAnalyticsResponse = {
   lastClicks: ClickDetailDTO[]
   browserBreakdown: Record<string, number>
   osBreakdown: Record<string, number>
+  clicksByDate: Record<string, number>
 }
