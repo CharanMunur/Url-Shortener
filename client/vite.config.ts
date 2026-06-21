@@ -10,7 +10,15 @@ export default defineConfig({
   plugins: [react(), tailwindcss()],
   server: {
     proxy: {
+      "/api": {
+        target: "http://localhost:8080",
+        changeOrigin: true,
+      },
       "/shorten": {
+        target: "http://localhost:8080",
+        changeOrigin: true,
+      },
+      "/urls": {
         target: "http://localhost:8080",
         changeOrigin: true,
       },
