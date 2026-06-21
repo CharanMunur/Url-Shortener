@@ -38,9 +38,27 @@ export function ShortenPage() {
     setCopied(false)
     try {
       const data = await createShortUrl({ originalUrl: trimmed }, token!)
+      
+      let shortUrl = ""
+      if (data.shortUrl && data.shortUrl.includes("http")) {
+        shortUrl = data.shortUrl
+      } else if (data.shortCode && data.shortCode.includes("http")) {
+        shortUrl = data.shortCode
+      } else {
+        const code = data.shortCode || data.shortUrl || ""
+        if (code) {
+          shortUrl = `http://localhost:8080/${code}`
+        }
+      }
+
+      let shortCode = shortUrl ? extractShortCode(shortUrl) : ""
+      if (!shortCode) {
+        shortCode = data.shortCode || data.shortUrl || ""
+      }
+
       setResult({
-        shortCode: extractShortCode(data.shortUrl),
-        shortUrl: data.shortUrl,
+        shortCode,
+        shortUrl,
       })
       setUrlCount((c) => (c !== null ? c + 1 : c))
     } catch (err) {

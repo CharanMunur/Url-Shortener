@@ -27,7 +27,33 @@ export function DashboardPage({ onNavigate }: DashboardPageProps) {
     ;(async () => {
       try {
         const data = await getUserUrls(token!)
-        setUrls(data)
+        const enriched = data.map((u) => {
+          let shortUrl = ""
+          if (u.shortUrl && u.shortUrl.includes("http")) {
+            shortUrl = u.shortUrl
+          } else if (u.shortCode && u.shortCode.includes("http")) {
+            shortUrl = u.shortCode
+          } else {
+            const code = u.shortCode || u.shortUrl || ""
+            if (code) {
+              shortUrl = `http://localhost:8080/${code}`
+            }
+          }
+
+          let shortCode = shortUrl ? extractShortCode(shortUrl) : ""
+          if (!shortCode) {
+            shortCode = u.shortCode || u.shortUrl || ""
+          }
+
+          const active = u.isActive !== undefined ? u.isActive : (u as any).active
+          return {
+            ...u,
+            shortUrl,
+            shortCode,
+            isActive: !!active,
+          }
+        })
+        setUrls(enriched)
       } catch {
         // ignore
       } finally {
@@ -38,8 +64,7 @@ export function DashboardPage({ onNavigate }: DashboardPageProps) {
 
   const activeUrls = urls.filter((u) => {
     const expired = u.expiresAt && new Date(u.expiresAt) < new Date()
-    const active = u.isActive !== undefined ? u.isActive : (u as any).active
-    return !!active && !expired
+    return u.isActive && !expired
   })
   const expiredUrls = urls.filter(
     (u) => u.expiresAt && new Date(u.expiresAt) < new Date()

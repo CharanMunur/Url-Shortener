@@ -27,8 +27,23 @@ interface MyLinksPageProps {
 
 function enrichUrls(urls: UrlResponse[]): EnrichedUrl[] {
   return urls.map((u) => {
-    const shortUrl = u.shortUrl || u.shortCode || ""
-    const shortCode = extractShortCode(shortUrl)
+    let shortUrl = ""
+    if (u.shortUrl && u.shortUrl.includes("http")) {
+      shortUrl = u.shortUrl
+    } else if (u.shortCode && u.shortCode.includes("http")) {
+      shortUrl = u.shortCode
+    } else {
+      const code = u.shortCode || u.shortUrl || ""
+      if (code) {
+        shortUrl = `http://localhost:8080/${code}`
+      }
+    }
+
+    let shortCode = shortUrl ? extractShortCode(shortUrl) : ""
+    if (!shortCode) {
+      shortCode = u.shortCode || u.shortUrl || ""
+    }
+
     const active = u.isActive !== undefined ? u.isActive : (u as any).active
     return {
       ...u,
