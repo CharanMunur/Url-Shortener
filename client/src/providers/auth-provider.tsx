@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useMemo, useState } from "react"
+import { createContext, useContext, useMemo, useState } from "react"
 
 import { requestJson } from "@/lib/api"
 import type {
@@ -22,15 +22,21 @@ const EMAIL_STORAGE_KEY = "url-shortener-email"
 const AuthContext = createContext<AuthContextValue | undefined>(undefined)
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [token, setToken] = useState<string | null>(null)
-  const [email, setEmail] = useState<string | null>(null)
-  const [isHydrated, setIsHydrated] = useState(false)
-
-  useEffect(() => {
-    setToken(localStorage.getItem(TOKEN_STORAGE_KEY))
-    setEmail(localStorage.getItem(EMAIL_STORAGE_KEY))
-    setIsHydrated(true)
-  }, [])
+  const [token, setToken] = useState<string | null>(() => {
+    try {
+      return localStorage.getItem(TOKEN_STORAGE_KEY)
+    } catch {
+      return null
+    }
+  })
+  const [email, setEmail] = useState<string | null>(() => {
+    try {
+      return localStorage.getItem(EMAIL_STORAGE_KEY)
+    } catch {
+      return null
+    }
+  })
+  const isHydrated = true
 
   const value = useMemo<AuthContextValue>(
     () => ({

@@ -3,6 +3,7 @@ import { AuthProvider, useAuth } from "@/providers/auth-provider"
 import { AuthScreen } from "@/components/auth-screen"
 import { DashboardShell } from "@/components/dashboard-shell"
 import { LandingPage } from "@/pages/LandingPage"
+import { Loader2 } from "lucide-react"
 
 function App() {
   return (
@@ -15,7 +16,16 @@ function App() {
 }
 
 function AppRoutes() {
-  const { token } = useAuth()
+  const { token, isHydrated } = useAuth()
+
+  if (!isHydrated) {
+    return (
+      <div className="flex h-screen items-center justify-center bg-background text-muted-foreground">
+        <Loader2 className="h-8 w-8 animate-spin" />
+        <span className="ml-2 text-sm">Loading...</span>
+      </div>
+    )
+  }
 
   return (
     <Routes>
@@ -34,10 +44,6 @@ function AppRoutes() {
       />
 
       {/* Protected routes */}
-      <Route
-        path="/dashboard"
-        element={token ? <DashboardShell /> : <Navigate to="/signin" replace />}
-      />
       <Route
         path="/dashboard/*"
         element={token ? <DashboardShell /> : <Navigate to="/signin" replace />}
