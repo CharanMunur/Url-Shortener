@@ -8,50 +8,16 @@ import {
   RefreshCw,
   Link2,
   CheckCircle2,
-  XCircle,
   Clock,
 } from "lucide-react"
 import { Switch } from "@/components/ui/switch"
 import { useAuth } from "@/providers/auth-provider"
 import { getUserUrls, toggleUrl, deleteUrl } from "@/lib/urls-api"
 import { ApiError } from "@/lib/api"
-import { extractShortCode, formatRelativeTime } from "@/lib/url"
-import type { UrlResponse } from "@/types/api"
-
-// Enriched URL with extracted short code so we never re-derive it
-type EnrichedUrl = UrlResponse & { shortCode: string; shortUrl: string }
+import { formatRelativeTime, enrichUrls, type EnrichedUrl } from "@/lib/url"
 
 interface MyLinksPageProps {
   onViewAnalytics: (shortCode: string) => void
-}
-
-function enrichUrls(urls: UrlResponse[]): EnrichedUrl[] {
-  return urls.map((u) => {
-    let shortUrl = ""
-    if (u.shortUrl && u.shortUrl.includes("http")) {
-      shortUrl = u.shortUrl
-    } else if (u.shortCode && u.shortCode.includes("http")) {
-      shortUrl = u.shortCode
-    } else {
-      const code = u.shortCode || u.shortUrl || ""
-      if (code) {
-        shortUrl = `http://localhost:8080/${code}`
-      }
-    }
-
-    let shortCode = shortUrl ? extractShortCode(shortUrl) : ""
-    if (!shortCode) {
-      shortCode = u.shortCode || u.shortUrl || ""
-    }
-
-    const active = u.isActive !== undefined ? u.isActive : (u as any).active
-    return {
-      ...u,
-      shortUrl,
-      shortCode,
-      isActive: !!active,
-    }
-  })
 }
 
 export function MyLinksPage({ onViewAnalytics }: MyLinksPageProps) {

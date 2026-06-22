@@ -18,6 +18,7 @@ export type UrlResponse = {
   shortCode?: string
   totalClicks: number
   isActive: boolean
+  active?: boolean
   expiresAt: string
 }
 

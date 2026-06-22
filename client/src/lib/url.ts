@@ -1,4 +1,36 @@
 import { getPublicShortUrlBase } from "@/lib/env"
+import type { UrlResponse } from "@/types/api"
+
+export type EnrichedUrl = UrlResponse & { shortCode: string; shortUrl: string }
+
+export function enrichUrls(urls: UrlResponse[]): EnrichedUrl[] {
+  return urls.map((u) => {
+    let shortUrl = ""
+    if (u.shortUrl && u.shortUrl.includes("http")) {
+      shortUrl = u.shortUrl
+    } else if (u.shortCode && u.shortCode.includes("http")) {
+      shortUrl = u.shortCode
+    } else {
+      const code = u.shortCode || u.shortUrl || ""
+      if (code) {
+        shortUrl = `http://localhost:8080/${code}`
+      }
+    }
+
+    let shortCode = shortUrl ? extractShortCode(shortUrl) : ""
+    if (!shortCode) {
+      shortCode = u.shortCode || u.shortUrl || ""
+    }
+
+    const active = u.isActive !== undefined ? u.isActive : u.active
+    return {
+      ...u,
+      shortUrl,
+      shortCode,
+      isActive: !!active,
+    }
+  })
+}
 
 export function buildShortUrl(shortCode: string) {
   const base = getPublicShortUrlBase().replace(/\/$/, "")

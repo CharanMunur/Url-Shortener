@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useNavigate, useLocation, Routes, Route, Navigate } from "react-router-dom"
 import {
   LayoutDashboard,
   Link2,
@@ -41,16 +41,27 @@ const NAV_ITEMS: { id: Page; label: string; icon: React.ReactNode }[] = [
 
 export function DashboardShell() {
   const { email, logout } = useAuth()
-  const [page, setPage] = useState<Page>("dashboard")
-  const [analyticsCode, setAnalyticsCode] = useState<string | null>(null)
+  const location = useLocation()
+  const navigate = useNavigate()
+
+  const pathname = location.pathname.replace(/\/$/, "")
+  const page: Page = (() => {
+    if (pathname.includes("/dashboard/shorten")) return "shorten"
+    if (pathname.includes("/dashboard/links")) return "links"
+    if (pathname.includes("/dashboard/analytics")) return "analytics"
+    return "dashboard"
+  })()
 
   function navigateTo(p: Page) {
-    setPage(p)
+    if (p === "dashboard") {
+      navigate("/dashboard")
+    } else {
+      navigate(`/dashboard/${p}`)
+    }
   }
 
   function viewAnalytics(shortCode: string) {
-    setAnalyticsCode(shortCode)
-    setPage("analytics")
+    navigate(`/dashboard/analytics/${shortCode}`)
   }
 
   const initials = email ? email.slice(0, 2).toUpperCase() : "U"
@@ -155,10 +166,14 @@ export function DashboardShell() {
 
         {/* Page content */}
         <main className="flex-1 overflow-y-auto px-4 sm:px-6 lg:px-8">
-          {page === "dashboard" && <DashboardPage onNavigate={navigateTo} />}
-          {page === "shorten" && <ShortenPage />}
-          {page === "links" && <MyLinksPage onViewAnalytics={viewAnalytics} />}
-          {page === "analytics" && <AnalyticsPage initialShortCode={analyticsCode} />}
+          <Routes>
+            <Route path="/" element={<DashboardPage onNavigate={navigateTo} />} />
+            <Route path="/shorten" element={<ShortenPage />} />
+            <Route path="/links" element={<MyLinksPage onViewAnalytics={viewAnalytics} />} />
+            <Route path="/analytics" element={<AnalyticsPage />} />
+            <Route path="/analytics/:shortCode" element={<AnalyticsPage />} />
+            <Route path="*" element={<Navigate to="" replace />} />
+          </Routes>
         </main>
       </SidebarInset>
     </SidebarProvider>

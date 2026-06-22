@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useNavigate } from "react-router-dom"
 import { Link2, Loader2, Eye, EyeOff, ArrowLeft } from "lucide-react"
 import { useAuth } from "@/providers/auth-provider"
@@ -15,6 +15,11 @@ export function AuthScreen({ initialTab = "login" }: AuthScreenProps) {
   const navigate = useNavigate()
   const { login, register } = useAuth()
   const [tab, setTab] = useState<Tab>(initialTab)
+
+  useEffect(() => {
+    setTab(initialTab)
+  }, [initialTab])
+
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [showPassword, setShowPassword] = useState(false)
@@ -43,6 +48,7 @@ export function AuthScreen({ initialTab = "login" }: AuthScreenProps) {
   }
 
   function switchTab(next: Tab) {
+    setTab(next)
     navigate(next === "login" ? "/signin" : "/signup")
     setError("")
     setEmail("")

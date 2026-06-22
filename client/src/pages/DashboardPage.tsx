@@ -45,7 +45,7 @@ export function DashboardPage({ onNavigate }: DashboardPageProps) {
             shortCode = u.shortCode || u.shortUrl || ""
           }
 
-          const active = u.isActive !== undefined ? u.isActive : (u as any).active
+          const active = u.isActive !== undefined ? u.isActive : u.active
           return {
             ...u,
             shortUrl,
@@ -195,7 +195,7 @@ export function DashboardPage({ onNavigate }: DashboardPageProps) {
                 >
                   <div
                     className={`h-2 w-2 rounded-full shrink-0 ${
-                      (url.isActive !== undefined ? url.isActive : (url as any).active) && !isExpired
+                      (url.isActive !== undefined ? url.isActive : url.active) && !isExpired
                         ? "bg-green-500"
                         : "bg-muted-foreground/40"
                     }`}

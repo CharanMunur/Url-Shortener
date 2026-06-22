@@ -20,6 +20,8 @@ import java.util.stream.Collectors;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import tools.jackson.core.type.TypeReference;
+import tools.jackson.databind.ObjectMapper;
 import ua_parser.Client;
 import ua_parser.Parser;
 
@@ -32,22 +34,27 @@ public class UrlService {
     private final ClickRepository clickRepository;
     private final StringRedisTemplate redisTemplate;
     private final AuthUtils authUtils;
+    private final ObjectMapper objectMapper;
 
     public UrlService(
         UrlRepository urlRepository,
         AuthUtils authUtils,
         ClickRepository clickRepository,
-        StringRedisTemplate redisTemplate
+        StringRedisTemplate redisTemplate,
+        ObjectMapper objectMapper
     ) {
         this.urlRepository = urlRepository;
         this.authUtils = authUtils;
         this.clickRepository = clickRepository;
         this.redisTemplate = redisTemplate;
+        this.objectMapper = objectMapper;
     }
 
     @Transactional
     public UrlResponse shortenUrl(UrlRequest request) {
         User user = authUtils.getCurrentUser();
+
+        String cacheKey = "userUrls:" + user.getId();
 
         long count = urlRepository.countByUser(user);
 
@@ -72,6 +79,8 @@ public class UrlService {
         saved.setShortCode(shortCode);
 
         urlRepository.save(saved);
+
+        redisTemplate.delete(cacheKey);
 
         return new UrlResponse(shortCode, 0, saved.isActive(), saved.getExpiresAt());
     }
@@ -114,6 +123,7 @@ public class UrlService {
             .build();
 
         clickRepository.save(click);
+        redisTemplate.delete("analytics:" + shortCode);
 
         return originalUrl;
     }
@@ -121,19 +131,33 @@ public class UrlService {
     public List<UrlResponse> getUserUrls() {
         User user = authUtils.getCurrentUser();
 
-        List<Url> urls = urlRepository.findByUser(user);
+        String cacheKey = "userUrls:" + user.getId();
+        String cachedJson = redisTemplate.opsForValue().get(cacheKey);
 
-        return urls
-            .stream()
-            .map(url ->
-                new UrlResponse(
-                    "http://localhost:8080/" + url.getShortCode(),
-                    clickRepository.countByUrl(url),
-                    url.isActive(),
-                    url.getExpiresAt()
+        if (cachedJson != null) {
+            List<UrlResponse> cached = objectMapper.readValue(
+                cachedJson,
+                new TypeReference<List<UrlResponse>>() {}
+            );
+            return cached;
+        } else {
+            List<Url> urls = urlRepository.findByUser(user);
+
+            List<UrlResponse> result = urls
+                .stream()
+                .map(url ->
+                    new UrlResponse(
+                        "http://localhost:8080/" + url.getShortCode(),
+                        clickRepository.countByUrl(url),
+                        url.isActive(),
+                        url.getExpiresAt()
+                    )
                 )
-            )
-            .toList();
+                .toList();
+            String json = objectMapper.writeValueAsString(result);
+            redisTemplate.opsForValue().set(cacheKey, json, Duration.ofHours(24));
+            return result;
+        }
     }
 
     public boolean toggleUrlStatus(String shortCode) {
@@ -150,6 +174,7 @@ public class UrlService {
         url.setActive(!url.isActive());
         urlRepository.save(url);
         redisTemplate.delete("url:" + shortCode);
+        redisTemplate.delete("userUrls:" + user.getId());
 
         return url.isActive();
     }
@@ -169,62 +194,79 @@ public class UrlService {
         clickRepository.deleteByUrl(url);
         urlRepository.delete(url);
         redisTemplate.delete("url:" + shortCode);
+        redisTemplate.delete("userUrls:" + user.getId());
+        redisTemplate.delete("analytics:" + shortCode);
     }
 
     public UrlAnalyticsResponse getUrlAnalytics(String shortCode) {
         User user = authUtils.getCurrentUser();
 
-        Url url = urlRepository
-            .findByShortCode(shortCode)
-            .orElseThrow(() -> new RuntimeException("Short code not found"));
+        String cacheKey = "analytics:" + shortCode;
+        String cachedJson = redisTemplate.opsForValue().get(cacheKey);
 
-        if (!url.getUser().getId().equals(user.getId())) {
-            throw new RuntimeException("You dont own this url");
-        }
-
-        List<Click> clicks = clickRepository.findByUrl(url);
-
-        Map<String, Long> browserBreakdown = clicks
-            .stream()
-            .map(click -> extractBrowser(click.getUserAgent()))
-            .collect(Collectors.groupingBy(browser -> browser, Collectors.counting()));
-
-        Map<String, Long> osBreakdown = clicks
-            .stream()
-            .map(click -> extractOperatingSystem(click.getUserAgent()))
-            .collect(Collectors.groupingBy(os -> os, Collectors.counting()));
-
-        Map<String, Long> clicksByDate = clicks
-            .stream()
-            .collect(
-                Collectors.groupingBy(
-                    click -> click.getClickedAt().toLocalDate().toString(),
-                    Collectors.counting()
-                )
+        if (cachedJson != null) {
+            UrlAnalyticsResponse cached = objectMapper.readValue(
+                cachedJson,
+                UrlAnalyticsResponse.class
             );
+            return cached;
+        } else {
+            Url url = urlRepository
+                .findByShortCode(shortCode)
+                .orElseThrow(() -> new RuntimeException("Short code not found"));
 
-        List<ClickDetailDTO> lastClicks = clicks
-            .stream()
-            .sorted(Comparator.comparing(Click::getClickedAt).reversed())
-            .limit(5)
-            .map(click ->
-                ClickDetailDTO.builder()
-                    .clickedAt(click.getClickedAt())
-                    .ipAddress(click.getIpAddress())
-                    .userAgent(click.getUserAgent())
-                    .build()
-            )
-            .toList();
+            if (!url.getUser().getId().equals(user.getId())) {
+                throw new RuntimeException("You dont own this url");
+            }
 
-        return UrlAnalyticsResponse.builder()
-            .shortCode(url.getShortCode())
-            .originalUrl(url.getOriginalUrl())
-            .totalClicks(clicks.size())
-            .lastClicks(lastClicks)
-            .browserBreakdown(browserBreakdown)
-            .osBreakdown(osBreakdown)
-            .clicksByDate(clicksByDate)
-            .build();
+            List<Click> clicks = clickRepository.findByUrl(url);
+
+            Map<String, Long> browserBreakdown = clicks
+                .stream()
+                .map(click -> extractBrowser(click.getUserAgent()))
+                .collect(Collectors.groupingBy(browser -> browser, Collectors.counting()));
+
+            Map<String, Long> osBreakdown = clicks
+                .stream()
+                .map(click -> extractOperatingSystem(click.getUserAgent()))
+                .collect(Collectors.groupingBy(os -> os, Collectors.counting()));
+
+            Map<String, Long> clicksByDate = clicks
+                .stream()
+                .collect(
+                    Collectors.groupingBy(
+                        click -> click.getClickedAt().toLocalDate().toString(),
+                        Collectors.counting()
+                    )
+                );
+
+            List<ClickDetailDTO> lastClicks = clicks
+                .stream()
+                .sorted(Comparator.comparing(Click::getClickedAt).reversed())
+                .limit(5)
+                .map(click ->
+                    ClickDetailDTO.builder()
+                        .clickedAt(click.getClickedAt())
+                        .ipAddress(click.getIpAddress())
+                        .userAgent(click.getUserAgent())
+                        .build()
+                )
+                .toList();
+
+            UrlAnalyticsResponse result = UrlAnalyticsResponse.builder()
+                .shortCode(url.getShortCode())
+                .originalUrl(url.getOriginalUrl())
+                .totalClicks(clicks.size())
+                .lastClicks(lastClicks)
+                .browserBreakdown(browserBreakdown)
+                .osBreakdown(osBreakdown)
+                .clicksByDate(clicksByDate)
+                .build();
+            String json = objectMapper.writeValueAsString(result);
+
+            redisTemplate.opsForValue().set(cacheKey, json, Duration.ofHours(24));
+            return result;
+        }
     }
 
     private String extractBrowser(String userAgent) {

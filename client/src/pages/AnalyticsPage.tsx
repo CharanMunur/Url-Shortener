@@ -1,8 +1,9 @@
 import { useEffect, useState, useCallback, useMemo } from "react"
+import { useParams, useNavigate } from "react-router-dom"
 import { useAuth } from "@/providers/auth-provider"
 import { getUserUrls, getUrlAnalytics } from "@/lib/urls-api"
 import { ApiError } from "@/lib/api"
-import { extractShortCode, formatDateTime } from "@/lib/url"
+import { formatDateTime, enrichUrls, type EnrichedUrl } from "@/lib/url"
 import { getBrowserIcon, getOsIcon, type IconData } from "@/lib/icons"
 import type { UrlAnalyticsResponse, UrlResponse } from "@/types/api"
 import {
@@ -14,9 +15,8 @@ import {
   ChevronDown,
   Link2,
   BarChart3,
-  Calendar,
 } from "lucide-react"
-import { Area, AreaChart, CartesianGrid, XAxis, YAxis, Pie, PieChart, Bar, BarChart } from "recharts"
+import { Area, AreaChart, CartesianGrid, XAxis, YAxis } from "recharts"
 import {
   ChartContainer,
   ChartTooltip,
@@ -30,8 +30,10 @@ interface AnalyticsPageProps {
 
 export function AnalyticsPage({ initialShortCode }: AnalyticsPageProps) {
   const { token } = useAuth()
-  const [urls, setUrls] = useState<UrlResponse[]>([])
-  const [selectedCode, setSelectedCode] = useState<string>(initialShortCode ?? "")
+  const { shortCode } = useParams()
+  const navigate = useNavigate()
+  const [urls, setUrls] = useState<EnrichedUrl[]>([])
+  const [selectedCode, setSelectedCode] = useState<string>(shortCode ?? initialShortCode ?? "")
   const [analytics, setAnalytics] = useState<UrlAnalyticsResponse | null>(null)
   const [isLoadingUrls, setIsLoadingUrls] = useState(true)
   const [isLoadingAnalytics, setIsLoadingAnalytics] = useState(false)
@@ -92,12 +94,24 @@ export function AnalyticsPage({ initialShortCode }: AnalyticsPageProps) {
   } satisfies ChartConfig
 
   useEffect(() => {
+    if (shortCode) {
+      setSelectedCode(shortCode)
+    }
+  }, [shortCode])
+
+  useEffect(() => {
     ;(async () => {
       try {
         const data = await getUserUrls(token!)
-        setUrls(data)
-        if (!initialShortCode && data.length > 0) {
-          setSelectedCode(extractShortCode(data[0].shortUrl))
+        const enriched = enrichUrls(data)
+        setUrls(enriched)
+        
+        const code = shortCode ?? initialShortCode ?? (enriched.length > 0 ? enriched[0].shortCode : "")
+        if (code) {
+          setSelectedCode(code)
+          if (!shortCode && enriched.length > 0) {
+            navigate(`/dashboard/analytics/${code}`, { replace: true })
+          }
         }
       } catch {
         // ignore
@@ -105,7 +119,7 @@ export function AnalyticsPage({ initialShortCode }: AnalyticsPageProps) {
         setIsLoadingUrls(false)
       }
     })()
-  }, [token, initialShortCode])
+  }, [token, initialShortCode, shortCode, navigate])
 
   const loadAnalytics = useCallback(
     async (code: string) => {
@@ -158,14 +172,13 @@ export function AnalyticsPage({ initialShortCode }: AnalyticsPageProps) {
             <select
               id="url-select"
               value={selectedCode}
-              onChange={(e) => setSelectedCode(e.target.value)}
+              onChange={(e) => navigate(`/dashboard/analytics/${e.target.value}`)}
               className="appearance-none rounded-lg border border-border bg-card px-4 py-2 pr-8 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-ring cursor-pointer"
             >
               {urls.map((u) => {
-                const code = extractShortCode(u.shortUrl)
                 return (
-                  <option key={code || u.shortUrl} value={code}>
-                    /{code}
+                  <option key={u.shortCode} value={u.shortCode}>
+                    /{u.shortCode}
                   </option>
                 )
               })}
