@@ -188,6 +188,8 @@
 @layer base {
   * {
     @apply border-border outline-ring/50;
+    scrollbar-width: thin;
+    scrollbar-color: var(--border) transparent;
     }
   body {
     @apply bg-background text-foreground;
@@ -196,4 +198,27 @@
   html {
     @apply font-sans;
     }
+
+  /* Custom Webkit scrollbar styles to match Shadcn UI colors and border radius */
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: var(--border);
+    border: 2.5px solid transparent;
+    background-clip: padding-box;
+    border-radius: 9999px;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: var(--muted-foreground);
+    border: 2.5px solid transparent;
+    background-clip: padding-box;
+  }
 }

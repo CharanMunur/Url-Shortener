@@ -1,5 +1,10 @@
 export type AuthResponse = {
   token: string
+  message?: string
+}
+
+export type MessageResponse = {
+  message: string
 }
 
 export type LoginRequest = {
@@ -8,6 +13,26 @@ export type LoginRequest = {
 }
 
 export type RegisterRequest = LoginRequest
+
+export type VerifyOtpRequest = {
+  email: string
+  otpCode: string
+}
+
+export type ForgotPasswordRequest = {
+  email: string
+}
+
+export type ResetPasswordRequest = {
+  email: string
+  otpCode: string
+  newPassword: string
+}
+
+export type ChangePasswordRequest = {
+  currentPassword: string
+  newPassword: string
+}
 
 export type UrlRequest = {
   originalUrl: string

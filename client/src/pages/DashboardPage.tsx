@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react"
 import { useAuth } from "@/providers/auth-provider"
 import { getUserUrls } from "@/lib/urls-api"
-import type { UrlResponse } from "@/types/api"
+import { formatRelativeTime, enrichUrls, type EnrichedUrl } from "@/lib/url"
 import {
   Link2,
   BarChart2,
@@ -12,7 +12,6 @@ import {
   Clock,
   ArrowRight,
 } from "lucide-react"
-import { extractShortCode, formatRelativeTime } from "@/lib/url"
 
 interface DashboardPageProps {
   onNavigate: (page: "shorten" | "links" | "analytics") => void
@@ -20,40 +19,14 @@ interface DashboardPageProps {
 
 export function DashboardPage({ onNavigate }: DashboardPageProps) {
   const { token, email } = useAuth()
-  const [urls, setUrls] = useState<UrlResponse[]>([])
+  const [urls, setUrls] = useState<EnrichedUrl[]>([])
   const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
     ;(async () => {
       try {
         const data = await getUserUrls(token!)
-        const enriched = data.map((u) => {
-          let shortUrl = ""
-          if (u.shortUrl && u.shortUrl.includes("http")) {
-            shortUrl = u.shortUrl
-          } else if (u.shortCode && u.shortCode.includes("http")) {
-            shortUrl = u.shortCode
-          } else {
-            const code = u.shortCode || u.shortUrl || ""
-            if (code) {
-              shortUrl = `http://localhost:8080/${code}`
-            }
-          }
-
-          let shortCode = shortUrl ? extractShortCode(shortUrl) : ""
-          if (!shortCode) {
-            shortCode = u.shortCode || u.shortUrl || ""
-          }
-
-          const active = u.isActive !== undefined ? u.isActive : u.active
-          return {
-            ...u,
-            shortUrl,
-            shortCode,
-            isActive: !!active,
-          }
-        })
-        setUrls(enriched)
+        setUrls(enrichUrls(data))
       } catch {
         // ignore
       } finally {
@@ -187,7 +160,7 @@ export function DashboardPage({ onNavigate }: DashboardPageProps) {
           <div className="rounded-xl border border-border bg-card overflow-hidden shadow-sm divide-y divide-border">
             {recentUrls.map((url, i) => {
               const isExpired = url.expiresAt && new Date(url.expiresAt) < new Date()
-              const shortCode = url.shortCode || extractShortCode(url.shortUrl) || ""
+              const shortCode = url.shortCode || ""
               return (
                 <div
                   key={`${url.shortUrl || url.shortCode || "url"}-${i}`}

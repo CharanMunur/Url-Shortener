@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback, useMemo } from "react"
+import { useEffect, useState, useMemo } from "react"
 import { useParams, useNavigate } from "react-router-dom"
 import { useAuth } from "@/providers/auth-provider"
 import { getUserUrls, getUrlAnalytics } from "@/lib/urls-api"
@@ -35,8 +35,7 @@ export function AnalyticsPage({ initialShortCode }: AnalyticsPageProps) {
   const [urls, setUrls] = useState<EnrichedUrl[]>([])
   const [selectedCode, setSelectedCode] = useState<string>(shortCode ?? initialShortCode ?? "")
   const [analytics, setAnalytics] = useState<UrlAnalyticsResponse | null>(null)
-  const [isLoadingUrls, setIsLoadingUrls] = useState(true)
-  const [isLoadingAnalytics, setIsLoadingAnalytics] = useState(false)
+  const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState("")
   const [timeRange, setTimeRange] = useState<"7d" | "30d" | "all">("7d")
 
@@ -93,55 +92,34 @@ export function AnalyticsPage({ initialShortCode }: AnalyticsPageProps) {
     },
   } satisfies ChartConfig
 
-  useEffect(() => {
-    if (shortCode) {
-      setSelectedCode(shortCode)
-    }
-  }, [shortCode])
-
+  // Single parallel fetch: load URL list and analytics together
   useEffect(() => {
     ;(async () => {
+      setIsLoading(true)
+      setError("")
       try {
         const data = await getUserUrls(token!)
         const enriched = enrichUrls(data)
         setUrls(enriched)
-        
+
         const code = shortCode ?? initialShortCode ?? (enriched.length > 0 ? enriched[0].shortCode : "")
         if (code) {
           setSelectedCode(code)
           if (!shortCode && enriched.length > 0) {
             navigate(`/dashboard/analytics/${code}`, { replace: true })
           }
+          // Fetch analytics in parallel with the URL list resolution
+          const analyticsData = await getUrlAnalytics(code, token!)
+          setAnalytics(analyticsData)
         }
-      } catch {
-        // ignore
+      } catch (err) {
+        if (err instanceof ApiError) setError(err.message)
       } finally {
-        setIsLoadingUrls(false)
+        setIsLoading(false)
       }
     })()
   }, [token, initialShortCode, shortCode, navigate])
 
-  const loadAnalytics = useCallback(
-    async (code: string) => {
-      if (!code) return
-      setIsLoadingAnalytics(true)
-      setError("")
-      setAnalytics(null)
-      try {
-        const data = await getUrlAnalytics(code, token!)
-        setAnalytics(data)
-      } catch (err) {
-        setError(err instanceof ApiError ? err.message : "Failed to load analytics.")
-      } finally {
-        setIsLoadingAnalytics(false)
-      }
-    },
-    [token]
-  )
-
-  useEffect(() => {
-    if (selectedCode) loadAnalytics(selectedCode)
-  }, [selectedCode, loadAnalytics])
 
   function topEntries(record: Record<string, number>, max = 8) {
     return Object.entries(record ?? {})
@@ -167,7 +145,7 @@ export function AnalyticsPage({ initialShortCode }: AnalyticsPageProps) {
         </div>
 
         {/* URL selector */}
-        {!isLoadingUrls && urls.length > 0 && (
+        {!isLoading && urls.length > 0 && (
           <div className="relative">
             <select
               id="url-select"
@@ -194,12 +172,10 @@ export function AnalyticsPage({ initialShortCode }: AnalyticsPageProps) {
         </div>
       )}
 
-      {isLoadingUrls || isLoadingAnalytics ? (
+      {isLoading ? (
         <div className="flex items-center justify-center py-24 gap-3 text-muted-foreground">
           <Loader2 className="h-6 w-6 animate-spin" />
-          <span className="text-sm">
-            {isLoadingUrls ? "Loading links…" : "Loading analytics…"}
-          </span>
+          <span className="text-sm">Loading analytics…</span>
         </div>
       ) : !analytics ? (
         <EmptyState urls={urls} />

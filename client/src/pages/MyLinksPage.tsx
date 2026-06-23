@@ -150,17 +150,155 @@ export function MyLinksPage({ onViewAnalytics }: MyLinksPageProps) {
               return (
                 <div
                   key={`${url.shortUrl || url.shortCode || "link"}-${i}`}
-                  className="flex flex-col md:grid md:grid-cols-[6rem_1fr_5rem_8.5rem_8rem_9.5rem] gap-2 md:gap-4 px-5 py-4 items-start md:items-center hover:bg-muted/20 transition-colors"
+                  className="flex flex-col md:grid md:grid-cols-[6rem_1fr_5rem_8.5rem_8rem_9.5rem] gap-4 px-4 py-4 md:px-5 md:py-4 items-stretch md:items-center hover:bg-muted/20 transition-colors"
                 >
+                  {/* MOBILE CARD VIEW */}
+                  <div className="md:hidden flex flex-col gap-3 w-full">
+                    {/* Header Row: Short code and Status */}
+                    <div className="flex items-center justify-between border-b border-border/50 pb-2">
+                      <span className="text-sm font-mono font-bold text-primary">
+                        /{url.shortCode || "—"}
+                      </span>
+                      
+                      {/* Status toggle field */}
+                      <div className="flex items-center gap-2">
+                        <Switch
+                          checked={isActive}
+                          onCheckedChange={() => handleToggle(url)}
+                          disabled={togglingUrl === url.shortUrl || !!isExpired || !url.shortCode}
+                          aria-label="Toggle URL active status"
+                        />
+                        {togglingUrl === url.shortUrl ? (
+                          <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" />
+                        ) : isActive ? (
+                          <span className="text-xs font-semibold text-green-600 dark:text-green-400">
+                            Active
+                          </span>
+                        ) : (
+                          <span className="text-xs font-medium text-muted-foreground">
+                            {isExpired ? "Expired" : "Off"}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Middle Info: Short URL and Original URL */}
+                    <div className="space-y-1.5">
+                      <div>
+                        <span className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider block">Short URL</span>
+                        <a
+                          href={url.shortUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-sm text-foreground font-medium hover:text-primary hover:underline flex items-center gap-1 mt-0.5"
+                        >
+                          {url.shortUrl}
+                          <ExternalLink className="h-3 w-3 shrink-0 opacity-60" />
+                        </a>
+                      </div>
+
+                      {url.originalUrl && (
+                        <div>
+                          <span className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider block">Dest URL</span>
+                          <p className="text-xs text-muted-foreground font-mono truncate max-w-full mt-0.5">
+                            {url.originalUrl}
+                          </p>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Stats & Expiry row */}
+                    <div className="flex items-center justify-between bg-muted/30 px-3 py-2 rounded-lg text-xs">
+                      {/* Clicks */}
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-muted-foreground">Clicks:</span>
+                        <span className="font-semibold text-foreground tabular-nums">{url.totalClicks.toLocaleString()}</span>
+                      </div>
+
+                      {/* Expiry */}
+                      <div className="flex items-center gap-1 text-muted-foreground">
+                        <Clock className="h-3.5 w-3.5 shrink-0" />
+                        <span>
+                          {url.expiresAt
+                            ? isExpired
+                              ? <span className="text-destructive font-medium">Expired</span>
+                              : formatRelativeTime(url.expiresAt)
+                            : "No expiry"}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Bottom Actions Row */}
+                    <div className="flex items-center justify-end gap-1 pt-1">
+                      <button
+                        type="button"
+                        onClick={() => onViewAnalytics(url.shortCode)}
+                        className="flex items-center gap-1 text-xs font-medium text-muted-foreground hover:text-foreground px-2.5 py-1.5 rounded-md hover:bg-muted border border-border/50 cursor-pointer"
+                      >
+                        <BarChart2 className="h-3.5 w-3.5" />
+                        Analytics
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => handleCopy(url.shortUrl)}
+                        className="flex items-center gap-1 text-xs font-medium text-muted-foreground hover:text-foreground px-2.5 py-1.5 rounded-md hover:bg-muted border border-border/50 cursor-pointer"
+                      >
+                        {copiedUrl === url.shortUrl ? (
+                          <>
+                            <CheckCircle2 className="h-3.5 w-3.5 text-green-500" />
+                            Copied
+                          </>
+                        ) : (
+                          <>
+                            <Copy className="h-3.5 w-3.5" />
+                            Copy
+                          </>
+                        )}
+                      </button>
+
+                      {confirmDeleteUrl === url.shortUrl ? (
+                        <div className="flex items-center gap-2 ml-2 shrink-0 bg-destructive/5 px-2 py-1 rounded-md border border-destructive/20 animate-in fade-in duration-200">
+                          <button
+                            type="button"
+                            onClick={() => handleDelete(url)}
+                            disabled={deletingUrl === url.shortUrl}
+                            className="text-xs text-destructive hover:underline font-semibold"
+                          >
+                            {deletingUrl === url.shortUrl ? "Deleting..." : "Confirm"}
+                          </button>
+                          <span className="text-border">|</span>
+                          <button
+                            type="button"
+                            onClick={() => setConfirmDeleteUrl(null)}
+                            className="text-xs text-muted-foreground hover:underline"
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => setConfirmDeleteUrl(url.shortUrl)}
+                          className="flex items-center gap-1 text-xs font-medium text-destructive hover:bg-destructive/10 px-2.5 py-1.5 rounded-md border border-destructive/20 transition-colors cursor-pointer"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                          Delete
+                        </button>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* DESKTOP TABLE ROW VIEW */}
                   {/* Short code */}
-                  <div className="shrink-0">
+                  <div className="hidden md:block shrink-0">
                     <span className="text-sm font-mono font-bold text-primary">
-                      {url.shortCode || "—"}
+                      /{url.shortCode || "—"}
                     </span>
                   </div>
 
                   {/* Short URL */}
-                  <div className="min-w-0 w-full">
+                  <div className="hidden md:block min-w-0 w-full">
                     <a
                       href={url.shortUrl}
                       target="_blank"
@@ -172,13 +310,12 @@ export function MyLinksPage({ onViewAnalytics }: MyLinksPageProps) {
                   </div>
 
                   {/* Clicks */}
-                  <div className="w-full md:w-auto md:text-right md:pr-2">
+                  <div className="hidden md:block w-full md:w-auto md:text-right md:pr-2">
                     <span className="text-sm font-semibold tabular-nums">{url.totalClicks.toLocaleString()}</span>
-                    <span className="text-xs text-muted-foreground md:hidden ml-1">clicks</span>
                   </div>
 
                   {/* Status toggle field */}
-                  <div className="flex md:justify-center items-center gap-2">
+                  <div className="hidden md:flex md:justify-center items-center gap-2">
                     <Switch
                       checked={isActive}
                       onCheckedChange={() => handleToggle(url)}
@@ -199,7 +336,7 @@ export function MyLinksPage({ onViewAnalytics }: MyLinksPageProps) {
                   </div>
 
                   {/* Expiry */}
-                  <div className="flex items-center gap-1 text-xs text-muted-foreground whitespace-nowrap">
+                  <div className="hidden md:flex items-center gap-1 text-xs text-muted-foreground whitespace-nowrap">
                     <Clock className="h-3 w-3 shrink-0" />
                     {url.expiresAt
                       ? isExpired
@@ -209,7 +346,7 @@ export function MyLinksPage({ onViewAnalytics }: MyLinksPageProps) {
                   </div>
 
                   {/* Actions */}
-                  <div className="flex items-center gap-0.5">
+                  <div className="hidden md:flex items-center gap-0.5">
                     <IconBtn title="View analytics" onClick={() => onViewAnalytics(url.shortCode)}>
                       <BarChart2 className="h-4 w-4" />
                     </IconBtn>

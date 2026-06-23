@@ -73,7 +73,7 @@ export function UrlShortenerPage() {
   } 
 
   return (
-    <main className="relative min-h-screen overflow-hidden bg-[radial-gradient(circle_at_top,rgba(120,119,198,0.18),transparent_38%),linear-gradient(180deg,hsl(var(--background))_0%,hsl(var(--background))_100%)]` (suggestCanonicalClasses) px-4 py-10 sm:px-6 lg:px-8">
+    <main className="relative min-h-screen overflow-hidden bg-[radial-gradient(circle_at_top,rgba(120,119,198,0.18),transparent_38%),linear-gradient(180deg,var(--background)_0%,var(--background)_100%)] px-4 py-10 sm:px-6 lg:px-8">
       <div className="pointer-events-none absolute inset-x-0 top-0 -z-10 h-64 bg-linear-to-b from-primary/5 to-transparent" />
       <div className="absolute right-4 top-4 z-10 sm:right-6 sm:top-6">
         <ModeToggle />
