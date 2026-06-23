@@ -20,7 +20,6 @@ import java.util.stream.Collectors;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import tools.jackson.core.type.TypeReference;
 import tools.jackson.databind.ObjectMapper;
 import ua_parser.Client;
 import ua_parser.Parser;
@@ -54,8 +53,6 @@ public class UrlService {
     public UrlResponse shortenUrl(UrlRequest request) {
         User user = authUtils.getCurrentUser();
 
-        String cacheKey = "userUrls:" + user.getId();
-
         long count = urlRepository.countByUser(user);
 
         if (count >= 25) {
@@ -79,8 +76,6 @@ public class UrlService {
         saved.setShortCode(shortCode);
 
         urlRepository.save(saved);
-
-        redisTemplate.delete(cacheKey);
 
         return new UrlResponse(shortCode, 0, saved.isActive(), saved.getExpiresAt());
     }
@@ -131,33 +126,26 @@ public class UrlService {
     public List<UrlResponse> getUserUrls() {
         User user = authUtils.getCurrentUser();
 
-        String cacheKey = "userUrls:" + user.getId();
-        String cachedJson = redisTemplate.opsForValue().get(cacheKey);
+        List<Url> urls = urlRepository.findByUser(user);
 
-        if (cachedJson != null) {
-            List<UrlResponse> cached = objectMapper.readValue(
-                cachedJson,
-                new TypeReference<List<UrlResponse>>() {}
-            );
-            return cached;
-        } else {
-            List<Url> urls = urlRepository.findByUser(user);
+        if (urls.isEmpty()) return List.of();
 
-            List<UrlResponse> result = urls
-                .stream()
-                .map(url ->
-                    new UrlResponse(
-                        "http://localhost:8080/" + url.getShortCode(),
-                        clickRepository.countByUrl(url),
-                        url.isActive(),
-                        url.getExpiresAt()
-                    )
+        Map<Long, Long> clickCounts = clickRepository
+            .countClicksGroupedByUrl(urls)
+            .stream()
+            .collect(Collectors.toMap(row -> (Long) row[0], row -> (Long) row[1]));
+
+        return urls
+            .stream()
+            .map(url ->
+                new UrlResponse(
+                    url.getShortCode(),
+                    clickCounts.getOrDefault(url.getId(), 0L),
+                    url.isActive(),
+                    url.getExpiresAt()
                 )
-                .toList();
-            String json = objectMapper.writeValueAsString(result);
-            redisTemplate.opsForValue().set(cacheKey, json, Duration.ofHours(24));
-            return result;
-        }
+            )
+            .toList();
     }
 
     public boolean toggleUrlStatus(String shortCode) {
@@ -174,7 +162,6 @@ public class UrlService {
         url.setActive(!url.isActive());
         urlRepository.save(url);
         redisTemplate.delete("url:" + shortCode);
-        redisTemplate.delete("userUrls:" + user.getId());
 
         return url.isActive();
     }
@@ -194,7 +181,6 @@ public class UrlService {
         clickRepository.deleteByUrl(url);
         urlRepository.delete(url);
         redisTemplate.delete("url:" + shortCode);
-        redisTemplate.delete("userUrls:" + user.getId());
         redisTemplate.delete("analytics:" + shortCode);
     }
 

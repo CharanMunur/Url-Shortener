@@ -28,6 +28,7 @@ import lombok.Setter;
 public class Url {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @JoinColumn(name = "url_id")
     private Long id;
 
     @Column(nullable = false, length = 2048)
