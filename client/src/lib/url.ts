@@ -13,7 +13,7 @@ export function enrichUrls(urls: UrlResponse[]): EnrichedUrl[] {
     } else {
       const code = u.shortCode || u.shortUrl || ""
       if (code) {
-        shortUrl = `http://localhost:8080/${code}`
+        shortUrl = buildShortUrl(code)
       }
     }
 

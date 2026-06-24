@@ -41,6 +41,7 @@ export type UrlRequest = {
 export type UrlResponse = {
   shortUrl?: string
   shortCode?: string
+  originalUrl?: string
   totalClicks: number
   isActive: boolean
   active?: boolean

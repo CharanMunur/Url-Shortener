@@ -1,8 +1,10 @@
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom"
+import { useEffect } from "react"
+import { BrowserRouter, Routes, Route, Navigate, useParams } from "react-router-dom"
 import { AuthProvider, useAuth } from "@/providers/auth-provider"
 import { AuthScreen } from "@/components/auth-screen"
 import { DashboardShell } from "@/components/dashboard-shell"
 import { LandingPage } from "@/pages/LandingPage"
+import { getApiBaseUrl } from "@/lib/env"
 import { Loader2 } from "lucide-react"
 
 function App() {
@@ -49,9 +51,39 @@ function AppRoutes() {
         element={token ? <DashboardShell /> : <Navigate to="/signin" replace />}
       />
 
+      {/* Public Shortcode Redirect Handler */}
+      <Route path="/:shortCode" element={<RedirectHandler />} />
+
       {/* Catch-all */}
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
+  )
+}
+
+function RedirectHandler() {
+  const { shortCode } = useParams()
+
+  useEffect(() => {
+    if (shortCode) {
+      const reserved = ["signin", "signup", "dashboard"]
+      if (reserved.includes(shortCode.toLowerCase())) {
+        return
+      }
+      const apiBase = getApiBaseUrl().replace(/\/$/, "")
+      window.location.href = `${apiBase}/${shortCode}`
+    }
+  }, [shortCode])
+
+  const reserved = ["signin", "signup", "dashboard"]
+  if (shortCode && reserved.includes(shortCode.toLowerCase())) {
+    return <Navigate to={`/${shortCode}`} replace />
+  }
+
+  return (
+    <div className="flex h-screen items-center justify-center bg-background text-muted-foreground">
+      <Loader2 className="h-8 w-8 animate-spin" />
+      <span className="ml-2 text-sm">Redirecting…</span>
+    </div>
   )
 }
 

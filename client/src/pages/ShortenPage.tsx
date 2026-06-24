@@ -3,7 +3,7 @@ import { Loader2, Link2, CheckCircle2, Copy, ExternalLink, Zap, AlertTriangle } 
 import { useAuth } from "@/providers/auth-provider"
 import { createShortUrl, getUserUrls } from "@/lib/urls-api"
 import { ApiError } from "@/lib/api"
-import { extractShortCode } from "@/lib/url"
+import { extractShortCode, buildShortUrl } from "@/lib/url"
 
 const URL_LIMIT = 25
 
@@ -47,7 +47,7 @@ export function ShortenPage() {
       } else {
         const code = data.shortCode || data.shortUrl || ""
         if (code) {
-          shortUrl = `http://localhost:8080/${code}`
+          shortUrl = buildShortUrl(code)
         }
       }
 

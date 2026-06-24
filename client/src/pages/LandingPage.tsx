@@ -27,7 +27,7 @@ const containerVariants = {
       staggerChildren: 0.08,
     },
   },
-}
+} as const
 
 const itemVariants = {
   hidden: { opacity: 0, y: 15 },
@@ -41,7 +41,7 @@ const itemVariants = {
       mass: 1,
     },
   },
-}
+} as const
 
 const FEATURES = [
   {
@@ -168,7 +168,7 @@ export function LandingPage() {
               variants={itemVariants}
             >
               Short links.{" "}
-              <span className="bg-gradient-to-r from-primary to-primary/55 bg-clip-text text-transparent inline-block">
+              <span className="bg-linear-to-r from-primary to-primary/55 bg-clip-text text-transparent inline-block">
                 Big insights.
               </span>
             </motion.h1>
@@ -317,7 +317,7 @@ export function LandingPage() {
                   <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none rounded-2xl"
                     style={{ background: "radial-gradient(ellipse 80% 60% at 20% 30%, color-mix(in srgb, var(--primary) 4%, transparent), transparent)" }}
                   />
-                  <div className={`flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br ${f.gradient} ${f.iconColor} mb-5 group-hover:scale-105 transition-transform duration-300`}>
+                  <div className={`flex h-11 w-11 items-center justify-center rounded-xl bg-linear-to-br ${f.gradient} ${f.iconColor} mb-5 group-hover:scale-105 transition-transform duration-300`}>
                     {f.icon}
                   </div>
                   <h3 className="font-semibold text-base mb-2">{f.title}</h3>

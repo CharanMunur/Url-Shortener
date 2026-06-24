@@ -149,14 +149,12 @@ export function DashboardShell() {
 
             {/* More menu */}
             <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <button
-                  type="button"
-                  title="Menu"
-                  className="p-1 rounded-md text-muted-foreground hover:text-foreground hover:bg-accent transition-colors cursor-pointer shrink-0"
-                >
-                  <MoreHorizontal className="h-3.5 w-3.5" />
-                </button>
+              <DropdownMenuTrigger
+                type="button"
+                title="Menu"
+                className="p-1 rounded-md text-muted-foreground hover:text-foreground hover:bg-accent transition-colors cursor-pointer shrink-0"
+              >
+                <MoreHorizontal className="h-3.5 w-3.5" />
               </DropdownMenuTrigger>
 
               <DropdownMenuContent
