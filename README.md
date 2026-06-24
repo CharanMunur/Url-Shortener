@@ -1,21 +1,61 @@
-# Shrtn: URL Shortener Monorepo
+# Shrtn — URL Shortener
 
-A high-performance URL shortening application consisting of a React + Vite frontend and a Spring Boot API backend. Designed for speed, responsiveness, and horizontal scalability.
+A fast, full-stack URL shortener with click analytics, OTP-based auth, and a Redis-backed redirect engine. Live at **[app.shrt.fun](https://app.shrt.fun)** — short links resolve via **[shrt.fun](https://shrt.fun)**.
+
+## Live URLs
+
+| Service | URL |
+|---|---|
+| Frontend (Dashboard) | [app.shrt.fun](https://app.shrt.fun) |
+| Short links | `shrt.fun/{code}` |
+| Backend API | [shrt.fun](https://shrt.fun) (Render) |
+
+---
 
 ## Tech Stack
 
-*   **Frontend:** React 19, TypeScript, Vite 8, Tailwind CSS v4, Framer Motion, Recharts
-*   **Backend:** Java 17, Spring Boot 3.x, Spring Security (JWT)
-*   **Database:** PostgreSQL (Spring Data JPA)
-*   **Cache:** Redis (Spring Data Redis)
+| Layer | Technology |
+|---|---|
+| **Frontend** | React 19, TypeScript, Vite, Tailwind CSS v4, Framer Motion, Recharts |
+| **Backend** | Java 25, Spring Boot 4, Spring Security (JWT) |
+| **Database** | PostgreSQL (Supabase) via Spring Data JPA |
+| **Cache** | Redis (Upstash) via Spring Data Redis |
+| **Email** | [Resend](https://resend.com) API (`noreply@shrt.fun`) |
+| **Analytics** | [Umami](https://umami.is) (self-hosted analytics script) |
+| **Hosting** | Vercel (frontend) · Render (backend) |
 
 ---
 
 ## Architecture & System Design
 
-### 1. Database Schema
+### Redirect Flow
 
-The relational database model persists user accounts, base62 short code mappings, dynamic verification OTPs, and clicks audit trails:
+Short links (`shrt.fun/{code}`) point directly to the Render backend — no frontend hop involved:
+
+```text
+User visits shrt.fun/{code}
+        │
+        ▼
+  ┌───────────┐  Hit   ┌──────────────────┐
+  │  Redis    ├───────►│  302 → destination│
+  │  Cache?   │        └──────────────────┘
+  └─────┬─────┘
+        │ Miss
+        ▼
+  ┌───────────┐  No    ┌──────────────────┐
+  │ Exist in  ├───────►│  404 / Inactive  │
+  │    DB?    │        └──────────────────┘
+  └─────┬─────┘
+        │ Yes + Active
+        ▼
+  Cache in Redis (24h TTL) → Log click async → 302 → destination
+```
+
+- **Hot-path cache:** `url:{shortCode}` → original URL, 24h TTL
+- **Analytics cache:** `analytics:{shortCode}` — evicted on every new click or delete
+- **Cache eviction:** toggle or delete immediately purges relevant Redis keys
+
+### Database Schema
 
 ```mermaid
 erDiagram
@@ -54,96 +94,73 @@ erDiagram
     URL ||--o{ CLICK : "logs"
 ```
 
-### 2. Redirection & Caching Flow
-
-To minimize latency on public redirects and reduce primary database load, Redis acts as a critical cache layer:
-
-```text
-Public Request (GET /{shortCode})
-       │
-       ▼
- ┌───────────┐  Yes  ┌───────────────┐
- │Cached in  ├──────►│Redirect (302) │
- │  Redis?   │       └───────────────┘
- └─────┬─────┘
-       │ No
-       ▼
- ┌───────────┐  No   ┌───────────────┐
- │ Exist in  ├──────►│  Error (404)  │
- │    DB?    │       └───────────────┘
- └─────┬─────┘
-       │ Yes
-       ▼
- ┌───────────┐       ┌───────────────┐       ┌───────────────┐       ┌───────────────┐
- │ Verify    ├──────►│ Cache URL in  ├──────►│ Log click to  ├──────►│Redirect (302) │
- │ Link      │       │ Redis (24h)   │       │ DB (Async)    │       └───────────────┘
- └───────────┘       └───────────────┘       └───────────────┘
-```
-
-*   **Redirection Cache:** Cached at `url:{shortCode}` for 24 hours. Bypasses database queries completely for hot links.
-*   **Analytics Cache:** Aggregated analytics dashboard payloads are cached at `analytics:{shortCode}`.
-*   **Eviction Policy:** Updating a URL state (toggling active status) or deleting a URL immediately evicts the corresponding keys from the cache.
-
 ---
 
 ## API Reference
 
-All protected endpoints require authorization using bearer tokens: `Authorization: Bearer <JWT_TOKEN>`.
+All protected endpoints require `Authorization: Bearer <JWT_TOKEN>`.
 
-| Method | Endpoint | Description | Auth Required |
+| Method | Endpoint | Description | Auth |
 |:---|:---|:---|:---|
-| **POST** | `/api/v1/auth/register` | Register a new user profile | No |
-| **POST** | `/api/v1/auth/verify` | Validate user registration email OTP | No |
-| **POST** | `/api/v1/auth/resend-otp` | Request a fresh OTP validation code | No |
-| **POST** | `/api/v1/auth/login` | Authenticate user credentials & receive JWT | No |
-| **POST** | `/api/v1/auth/forgot-password` | Request recovery OTP code for forgotten password | No |
-| **POST** | `/api/v1/auth/reset-password` | Validate recovery OTP & update account password | No |
-| **POST** | `/api/v1/users/change-password` | Update current account password | Yes |
-| **POST** | `/shorten` | Generate base62 short code for a URL (max 25/user) | Yes |
-| **GET** | `/urls` | List all URLs owned by current user | Yes |
-| **PATCH**| `/urls/{shortCode}/toggle` | Toggle link redirection active status | Yes |
-| **DELETE**| `/urls/{shortCode}` | Evict link & associated logs | Yes |
-| **GET** | `/urls/{shortCode}/analytics` | Retrieve browser, OS, and timeline click insights | Yes |
-| **GET** | `/{shortCode}` | Public redirection portal | No |
+| `POST` | `/api/v1/auth/register` | Register user, send verification OTP | No |
+| `POST` | `/api/v1/auth/verify-otp` | Verify email OTP, receive JWT | No |
+| `POST` | `/api/v1/auth/resend-otp` | Re-send OTP email | No |
+| `POST` | `/api/v1/auth/login` | Login, receive JWT | No |
+| `POST` | `/api/v1/auth/forgot-password` | Send password reset OTP | No |
+| `POST` | `/api/v1/auth/reset-password` | Reset password with OTP | No |
+| `POST` | `/api/v1/users/change-password` | Change current password | Yes |
+| `POST` | `/shorten` | Create short link (max 25/user) | Yes |
+| `GET` | `/urls` | List all user's links | Yes |
+| `PATCH` | `/urls/{shortCode}/toggle` | Toggle link active status | Yes |
+| `DELETE` | `/urls/{shortCode}` | Delete link + analytics | Yes |
+| `GET` | `/urls/{shortCode}/analytics` | Get click analytics | Yes |
+| `GET` | `/{shortCode}` | Public redirect | No |
 
 ---
 
 ## Environment Setup
 
-Create a `.env` configuration file in the `server/` directory:
+### Backend (`server/.env`)
 
 ```env
-DB_PASSWORD=            # PostgreSQL DB Password
-REDIS_HOST=             # Redis cache host
-REDIS_PORT=             # Redis cache port
-REDIS_PASSWORD=         # Redis credentials password
-JWT_SECRET=             # JWT token sign key (HMAC-SHA256)
-MAIL_PASSWORD=          # Gmail SMTP Credentials password
+DB_URL=              # PostgreSQL JDBC connection string
+DB_USERNAME=         # PostgreSQL username
+DB_PASSWORD=         # PostgreSQL password
+REDIS_HOST=          # Upstash Redis host
+REDIS_PORT=          # Upstash Redis port
+REDIS_PASSWORD=      # Upstash Redis password
+JWT_SECRET=          # HMAC-SHA256 signing key
+RESEND_API_KEY=      # Resend API key (re_...)
+CORS_ALLOWED_ORIGINS=https://app.shrt.fun
+```
+
+### Frontend (`client/.env`)
+
+```env
+VITE_API_BASE_URL=https://shrt.fun
+VITE_PUBLIC_SHORT_URL_BASE=https://shrt.fun
 ```
 
 ---
 
-## Getting Started
+## Getting Started (Local)
 
 ### Backend
-1. Copy `server/.env.example` to `server/.env` and update parameters.
-2. Launch the Spring Boot server:
-   ```bash
-   cd server && ./gradlew bootRun
-   ```
+```bash
+cd server
+cp .env.example .env   # fill in your values
+./gradlew bootRun
+```
 
 ### Frontend
-1. Install client node modules:
-   ```bash
-   cd client && bun install # or npm install
-   ```
-2. Start the Vite development build server:
-   ```bash
-   bun run dev # or npm run dev
-   ```
+```bash
+cd client
+bun install            # or npm install
+bun run dev            # or npm run dev
+```
 
 ---
 
 ## License
 
-This project is licensed under the MIT License. See the [LICENSE](file:///home/charan/Documents/UrlShortener/LICENSE) file for details.
+MIT — see [LICENSE](./LICENSE).
