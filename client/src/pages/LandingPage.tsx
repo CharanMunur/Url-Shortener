@@ -17,8 +17,6 @@ import {
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Separator } from "@/components/ui/separator"
-import { ModeToggle } from "@/features/theme/mode-toggle"
 
 const containerVariants = {
   hidden: {},
@@ -95,11 +93,11 @@ export function LandingPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
+    <div className="dark bg-background text-foreground min-h-screen flex flex-col">
 
       {/* ── Nav ─────────────────────────────────────────────────────────── */}
       <header className="sticky top-0 z-50 border-b border-border bg-background/80 backdrop-blur-md">
-        <div className="mx-auto flex h-14 max-w-6xl items-center px-4 sm:px-6 gap-4">
+        <div className="mx-auto flex h-14 max-w-6xl items-center justify-between px-4 sm:px-6 w-full">
           {/* Logo */}
           <div className="flex items-center gap-2.5 shrink-0">
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground shadow-sm">
@@ -108,23 +106,12 @@ export function LandingPage() {
             <span className="font-bold tracking-tight text-foreground">Shrtn</span>
           </div>
 
-          {/* Spacer pushes everything to the right */}
-          <div className="flex-1" />
-
           {/* Auth buttons */}
-          <div className="flex items-center gap-2">
-            <Button variant="ghost" size="sm" onClick={() => navigate("/signin")} className="text-sm">
+          <div className="flex items-center">
+            <Button variant="outline" size="sm" onClick={() => navigate("/signin")} className="text-sm font-medium">
               Sign in
             </Button>
-            <Button size="sm" onClick={() => navigate("/signup")} className="text-sm gap-1.5">
-              Get started
-              <ArrowRight className="h-3.5 w-3.5" />
-            </Button>
           </div>
-
-          {/* Separator + Theme toggle far right */}
-          <Separator orientation="vertical" className="h-5 mx-1 self-center" />
-          <ModeToggle />
         </div>
       </header>
 
@@ -154,7 +141,7 @@ export function LandingPage() {
             style={{ background: "color-mix(in srgb, var(--primary) 35%, transparent)" }}
           />
 
-          <div className="mx-auto max-w-3xl px-4 sm:px-6" style={{ textAlign: "center" }}>
+          <div className="w-full mx-auto max-w-3xl px-4 sm:px-6" style={{ textAlign: "center" }}>
             <motion.div className="flex justify-center mb-4" variants={itemVariants}>
               <Badge variant="secondary" className="gap-1.5 text-xs font-medium px-3 py-1 rounded-full">
                 <TrendingUp className="h-3 w-3" />
@@ -163,12 +150,12 @@ export function LandingPage() {
             </motion.div>
 
             <motion.h1
-              className="text-4xl sm:text-5xl lg:text-[64px] font-bold tracking-tight leading-tight mb-3 text-center"
+              className="text-3xl sm:text-6xl lg:text-[72px] font-bold tracking-tight leading-tight mb-3 text-center"
               style={{ textAlign: "center" }}
               variants={itemVariants}
             >
               Short links.{" "}
-              <span className="bg-linear-to-r from-primary to-primary/55 bg-clip-text text-transparent inline-block">
+              <span className="bg-linear-to-r from-primary to-primary/55 bg-clip-text text-transparent inline">
                 Big insights.
               </span>
             </motion.h1>
@@ -182,18 +169,18 @@ export function LandingPage() {
             </motion.p>
 
             <motion.div
-              className="flex flex-col sm:flex-row items-center justify-center gap-3 mb-6"
+              className="flex flex-row items-center justify-center gap-3 mb-6"
               variants={itemVariants}
             >
-              <Button size="lg" onClick={() => navigate("/signup")} className="gap-2 px-7 w-full sm:w-auto shadow-md">
-                Start shortening — it's free
+              <Button size="lg" onClick={() => navigate("/signup")} className="gap-1.5 px-5 shadow-md text-sm sm:text-base">
+                Get started
                 <ArrowRight className="h-4 w-4" />
               </Button>
               <Button
                 variant="outline"
                 size="lg"
                 onClick={() => navigate("/signin")}
-                className="w-full sm:w-auto"
+                className="text-sm sm:text-base"
               >
                 Sign in
               </Button>
@@ -201,63 +188,45 @@ export function LandingPage() {
 
             {/* Demo card */}
             <motion.div
-              className="mx-auto max-w-lg rounded-2xl border border-border bg-card shadow-lg overflow-hidden text-left ring-1 ring-black/5 dark:ring-white/5"
+              className="w-full mx-auto max-w-md rounded-2xl border border-border bg-card p-4 shadow-lg text-left flex items-center justify-between gap-4 ring-1 ring-black/5 dark:ring-white/5"
               variants={itemVariants}
             >
-              {/* Browser chrome dots */}
-              <div className="flex items-center gap-1.5 px-4 pt-3 pb-2 border-b border-border bg-muted/40">
-                <span className="h-2.5 w-2.5 rounded-full bg-red-400/70" />
-                <span className="h-2.5 w-2.5 rounded-full bg-amber-400/70" />
-                <span className="h-2.5 w-2.5 rounded-full bg-green-400/70" />
-                <span className="ml-3 text-[10px] font-mono text-muted-foreground/60 truncate flex-1">
-                  {DEMO_URL}
-                </span>
-              </div>
-              {/* Input row */}
-              <div className="px-4 py-3 border-b border-border bg-muted/20">
-                <p className="text-[10px] font-semibold text-muted-foreground/60 uppercase tracking-widest mb-1.5">
-                  Long URL
+              <div className="min-w-0 flex-1 space-y-0.5">
+                <p className="text-[10px] font-bold text-muted-foreground/50 uppercase tracking-wider">
+                  Demo Link
                 </p>
-                <p className="text-sm text-muted-foreground font-mono truncate">{DEMO_URL}</p>
+                <p className="text-base font-extrabold text-primary font-mono truncate">{DEMO_SHORT}</p>
+                <p className="text-xs text-muted-foreground/60 truncate font-mono">{DEMO_URL}</p>
               </div>
-              {/* Output row */}
-              <div className="flex items-center justify-between gap-3 px-4 py-3.5">
-                <div>
-                  <p className="text-[10px] font-semibold text-muted-foreground/60 uppercase tracking-widest mb-1">
-                    Short link
-                  </p>
-                  <p className="text-sm font-bold text-primary font-mono">{DEMO_SHORT}</p>
-                </div>
-                <button
-                  onClick={copyDemo}
-                  className={`flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-semibold transition-all shrink-0 cursor-pointer ${
-                    copied
-                      ? "border-green-500/30 bg-green-500/10 text-green-600"
-                      : "border-border bg-background text-foreground hover:bg-muted"
-                  }`}
-                >
-                  {copied ? (
-                    <>
-                      <CheckCircle2 className="h-3.5 w-3.5" />
-                      Copied!
-                    </>
-                  ) : (
-                    <>
-                      <Copy className="h-3.5 w-3.5" />
-                      Copy
-                    </>
-                  )}
-                </button>
-              </div>
+              <button
+                onClick={copyDemo}
+                className={`flex items-center gap-1.5 rounded-xl border px-3.5 py-2 text-xs font-bold transition-all shrink-0 cursor-pointer ${
+                  copied
+                    ? "border-green-500/30 bg-green-500/10 text-green-600"
+                    : "border-border bg-background text-foreground hover:bg-muted"
+                }`}
+              >
+                {copied ? (
+                  <>
+                    <CheckCircle2 className="h-4 w-4" />
+                    Copied
+                  </>
+                ) : (
+                  <>
+                    <Copy className="h-4 w-4" />
+                    Copy
+                  </>
+                )}
+              </button>
             </motion.div>
           </div>
         </motion.section>
 
         {/* ── Stats ───────────────────────────────────────────────────────── */}
         <section className="border-y border-border bg-muted/20 py-12">
-          <div className="mx-auto max-w-4xl px-4 sm:px-6">
+          <div className="w-full mx-auto max-w-4xl px-4 sm:px-6">
             <motion.div
-              className="grid grid-cols-3 divide-x divide-border"
+              className="grid grid-cols-1 md:grid-cols-3 gap-8 md:gap-0 md:divide-x divide-border"
               variants={containerVariants}
               initial="hidden"
               whileInView="visible"
@@ -280,7 +249,7 @@ export function LandingPage() {
 
         {/* ── Features ────────────────────────────────────────────────────── */}
         <section className="py-24 sm:py-32">
-          <div className="mx-auto max-w-5xl px-4 sm:px-6">
+          <div className="w-full mx-auto max-w-5xl px-4 sm:px-6">
             <motion.div
               className="text-center mb-16"
               initial={{ opacity: 0, y: 15 }}
@@ -330,7 +299,7 @@ export function LandingPage() {
 
         {/* ── Analytics preview ───────────────────────────────────────────── */}
         <section className="border-t border-border py-24 sm:py-32" style={{ background: "color-mix(in srgb, var(--muted) 15%, transparent)" }}>
-          <div className="mx-auto max-w-5xl px-4 sm:px-6">
+          <div className="w-full mx-auto max-w-5xl px-4 sm:px-6">
             <motion.div
               className="grid grid-cols-1 lg:grid-cols-2 gap-14 items-center"
               initial={{ opacity: 0, y: 20 }}
@@ -424,7 +393,7 @@ export function LandingPage() {
             }}
           />
           <motion.div
-            className="mx-auto max-w-xl px-4 sm:px-6 text-center"
+            className="w-full mx-auto max-w-xl px-4 sm:px-6 text-center"
             initial={{ opacity: 0, y: 25 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
@@ -454,7 +423,7 @@ export function LandingPage() {
 
       {/* ── Footer ──────────────────────────────────────────────────────── */}
       <footer className="border-t border-border bg-muted/20">
-        <div className="mx-auto max-w-6xl px-4 sm:px-6">
+        <div className="w-full mx-auto max-w-6xl px-4 sm:px-6">
           {/* Main footer row */}
           <div className="flex flex-col sm:flex-row items-start justify-between gap-10 py-12">
             {/* Brand */}
@@ -474,22 +443,57 @@ export function LandingPage() {
             <div className="flex gap-16">
               <div>
                 <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3">Product</p>
-                <ul className="space-y-2">
-                  {["Dashboard", "Analytics", "My Links"].map((l) => (
-                    <li key={l}>
-                      <span className="text-sm text-muted-foreground hover:text-foreground transition-colors cursor-default">{l}</span>
-                    </li>
-                  ))}
+                <ul className="space-y-2 flex flex-col items-start">
+                  <li>
+                    <button
+                      type="button"
+                      onClick={() => navigate("/dashboard")}
+                      className="text-sm text-muted-foreground hover:text-foreground transition-colors cursor-pointer text-left"
+                    >
+                      Dashboard
+                    </button>
+                  </li>
+                  <li>
+                    <button
+                      type="button"
+                      onClick={() => navigate("/dashboard/analytics")}
+                      className="text-sm text-muted-foreground hover:text-foreground transition-colors cursor-pointer text-left"
+                    >
+                      Analytics
+                    </button>
+                  </li>
+                  <li>
+                    <button
+                      type="button"
+                      onClick={() => navigate("/dashboard/links")}
+                      className="text-sm text-muted-foreground hover:text-foreground transition-colors cursor-pointer text-left"
+                    >
+                      My Links
+                    </button>
+                  </li>
                 </ul>
               </div>
               <div>
                 <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3">Account</p>
-                <ul className="space-y-2">
-                  {["Sign in", "Sign up"].map((l) => (
-                    <li key={l}>
-                      <span className="text-sm text-muted-foreground hover:text-foreground transition-colors cursor-default">{l}</span>
-                    </li>
-                  ))}
+                <ul className="space-y-2 flex flex-col items-start">
+                  <li>
+                    <button
+                      type="button"
+                      onClick={() => navigate("/signin")}
+                      className="text-sm text-muted-foreground hover:text-foreground transition-colors cursor-pointer text-left"
+                    >
+                      Sign in
+                    </button>
+                  </li>
+                  <li>
+                    <button
+                      type="button"
+                      onClick={() => navigate("/signup")}
+                      className="text-sm text-muted-foreground hover:text-foreground transition-colors cursor-pointer text-left"
+                    >
+                      Sign up
+                    </button>
+                  </li>
                 </ul>
               </div>
             </div>
