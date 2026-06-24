@@ -12,6 +12,9 @@ import lombok.Setter;
 public class UrlResponse {
     @Getter
     private String shortCode;
+
+    @Getter
+    private String originalUrl;
     
     @Getter
     private long totalClicks;

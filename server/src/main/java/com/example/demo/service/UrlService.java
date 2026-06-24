@@ -77,7 +77,7 @@ public class UrlService {
 
         urlRepository.save(saved);
 
-        return new UrlResponse(shortCode, 0, saved.isActive(), saved.getExpiresAt());
+        return new UrlResponse(shortCode, originalUrl, 0, saved.isActive(), saved.getExpiresAt());
     }
 
     public String redirectUrl(String shortCode, String ipAddress, String userAgent) {
@@ -140,6 +140,7 @@ public class UrlService {
             .map(url ->
                 new UrlResponse(
                     url.getShortCode(),
+                    url.getOriginalUrl(),
                     clickCounts.getOrDefault(url.getId(), 0L),
                     url.isActive(),
                     url.getExpiresAt()
