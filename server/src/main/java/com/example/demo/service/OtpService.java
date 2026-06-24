@@ -1,7 +1,6 @@
 package com.example.demo.service;
 
 import com.example.demo.dto.AuthResponse;
-import com.example.demo.dto.LoginRequest;
 import com.example.demo.model.Otp;
 import com.example.demo.model.OtpPurpose;
 import com.example.demo.model.User;
@@ -10,8 +9,6 @@ import com.example.demo.repository.UserRepository;
 import com.example.demo.security.JwtUtils;
 import java.time.LocalDateTime;
 import java.util.Random;
-import org.springframework.mail.SimpleMailMessage;
-import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.stereotype.Service;
@@ -21,19 +18,19 @@ public class OtpService {
 
     private final OtpRepository otpRepository;
     private final JwtUtils jwtUtils;
-    private final JavaMailSender javaMailSender;
+    private final ResendEmailService resendEmailService;
     private final UserDetailsService userDetailsService;
     private final UserRepository userRepository;
 
     public OtpService(
         OtpRepository otpRepository,
-        JavaMailSender javaMailSender,
+        ResendEmailService resendEmailService,
         JwtUtils jwtUtils,
         UserDetailsService userDetailsService,
         UserRepository userRepository
     ) {
         this.otpRepository = otpRepository;
-        this.javaMailSender = javaMailSender;
+        this.resendEmailService = resendEmailService;
         this.jwtUtils = jwtUtils;
         this.userDetailsService = userDetailsService;
         this.userRepository = userRepository;
@@ -46,36 +43,25 @@ public class OtpService {
         // Generate 6-digit OTP
         String code = String.format("%06d", new Random().nextInt(999999));
 
+        int expiryMinutes = purpose == OtpPurpose.EMAIL_VERIFICATION ? 5 : 15;
+
         Otp otp = Otp.builder()
             .user(user)
             .purpose(purpose)
             .otpCode(code)
             .createdAt(LocalDateTime.now())
-            .expiresAt(
-                LocalDateTime.now().plusMinutes(purpose == OtpPurpose.EMAIL_VERIFICATION ? 5 : 15)
-            )
+            .expiresAt(LocalDateTime.now().plusMinutes(expiryMinutes))
             .build();
 
         otpRepository.save(otp);
 
-        SimpleMailMessage message = new SimpleMailMessage();
-        message.setTo(user.getEmail());
-        message.setSubject(
-            purpose == OtpPurpose.EMAIL_VERIFICATION ? "Verify your email" : "Reset your password"
-        );
-        message.setText(
-            "Your OTP is: " +
-                code +
-                "\nIt expires in " +
-                (purpose == OtpPurpose.EMAIL_VERIFICATION ? "5" : "15") +
-                " minutes."
-        );
-        try {
-            javaMailSender.send(message);
-        } catch (Exception e) {
-            System.err.println("Failed to send OTP email: " + e.getMessage());
-            e.printStackTrace();
-        }
+        String subject = purpose == OtpPurpose.EMAIL_VERIFICATION
+            ? "Verify your email — Shrtn"
+            : "Reset your password — Shrtn";
+
+        String body = "Your OTP is: " + code + "\nIt expires in " + expiryMinutes + " minutes.";
+
+        resendEmailService.sendEmail(user.getEmail(), subject, body);
     }
 
     public AuthResponse verifyOtp(User user, OtpPurpose purpose, String code) {
