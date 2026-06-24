@@ -1,13 +1,32 @@
-# Shrtn Client: React Frontend Application
+# Shrtn Client — React Frontend
 
-The React-based web client for the Shrtn URL shortener application. Features a highly refined dashboard interface, theme management, and native mobile optimization.
+The React web app for [Shrtn](https://app.shrt.fun). Deployed on **Vercel** at `app.shrt.fun`.
 
-## Key Features
+## Features
 
-*   **Responsive Layouts:** Adaptive dashboard shell that dynamically converts a desktop navigation column into a mobile slide-out drawer sidebar, combined with an adaptive card/grid view for managing link lists on smaller viewports.
-*   **Animations:** Smooth page-loading transitions, staggered layout builds, and scroll-revealed sections built using Framer Motion.
-*   **Telemetry Graphs:** Analytics dashboards visualization (timelines, browser ratios, operating system breakdowns) built with Recharts.
-*   **State Hydration:** Client-side token hydration and session management via React Context.
+- **Auth flows** — sign-up, email OTP verification, login, forgot/reset password
+- **Dashboard** — overview stats, recent links, click totals
+- **My Links** — paginated table with toggle, copy, delete, analytics per link
+- **Shorten page** — paste a URL, get a `shrt.fun/{code}` link instantly
+- **Analytics** — browser/OS breakdowns, click timelines (Recharts)
+- **Theme** — light / dark / system toggle, persisted to localStorage
+- **Responsive** — desktop sidebar + mobile slide-out drawer
+- **Animations** — page transitions via Framer Motion
+- **Analytics tracking** — Umami script embedded in `index.html`
+
+---
+
+## Stack
+
+| | |
+|---|---|
+| Framework | React 19 + TypeScript |
+| Build tool | Vite |
+| Styling | Tailwind CSS v4 |
+| Animations | Framer Motion |
+| Charts | Recharts |
+| Routing | React Router v7 |
+| Package manager | Bun (also compatible with npm) |
 
 ---
 
@@ -16,41 +35,65 @@ The React-based web client for the Shrtn URL shortener application. Features a h
 ```text
 src/
 ├── components/
-│   ├── ui/               # Reusable atomic design system elements
-│   ├── url-shortener/    # Components for public url shortening
-│   ├── auth-screen.tsx   # Sign-in, sign-up, verification, and recovery forms logic
-│   └── dashboard-shell.tsx # Shell container managing sidebars & routes
-├── features/
-│   └── theme/            # Theme context provider & ModeToggle switcher
+│   ├── ui/                   # Reusable atomic UI primitives (button, switch, etc.)
+│   ├── auth-screen.tsx       # Sign-in, sign-up, OTP verification, password reset
+│   └── dashboard-shell.tsx   # Sidebar shell + nested routing
 ├── lib/
-│   ├── api.ts            # Network client configuration
-│   └── urls-api.ts       # Backend endpoint mappings
+│   ├── api.ts                # Fetch wrapper with auth headers & error handling
+│   ├── urls-api.ts           # Typed API functions (shorten, list, toggle, delete, analytics)
+│   ├── url.ts                # URL enrichment, short URL builder, date helpers
+│   └── env.ts                # VITE_* env var accessors
 ├── pages/
-│   ├── AnalyticsPage.tsx # Link traffic logs, timelines, and metrics charts
-│   ├── DashboardPage.tsx # Overview statistics, metrics cards, and recent actions
-│   ├── LandingPage.tsx   # Public marketing presentation page
-│   ├── MyLinksPage.tsx   # Adaptive grid/card managing user's urls
-│   ├── PersonalInfoPage.tsx # User profile preferences and layout mode config
-│   └── SettingsPage.tsx  # User password security modifications
-└── providers/
-    ├── auth-provider.tsx # Session authorization context provider
-    └── theme-provider.tsx # Theme variables wrapper
+│   ├── LandingPage.tsx       # Public marketing page
+│   ├── DashboardPage.tsx     # Overview stats + quick actions
+│   ├── ShortenPage.tsx       # URL shortening form with usage limit indicator
+│   ├── MyLinksPage.tsx       # Full link management table (desktop + mobile card)
+│   ├── AnalyticsPage.tsx     # Per-link click analytics with charts
+│   ├── SettingsPage.tsx      # Change password
+│   └── PersonalInfoPage.tsx  # Profile info
+├── providers/
+│   ├── auth-provider.tsx     # JWT session context (localStorage hydration)
+│   └── theme-provider.tsx    # Theme context wrapper
+├── App.tsx                   # Root router + RedirectHandler (shrt.fun/code fallback)
+└── main.tsx                  # Entry point
 ```
 
 ---
 
-## Operations
+## Environment Variables
 
-### Development
-Start the local Vite server:
+Create `client/.env`:
+
+```env
+VITE_API_BASE_URL=https://shrt.fun           # Render backend
+VITE_PUBLIC_SHORT_URL_BASE=https://shrt.fun  # Displayed in short link UI
+```
+
+For local development these default to `http://localhost:8080`.
+
+---
+
+## Redirect Architecture
+
+When a user visits `app.shrt.fun/{code}`, the `RedirectHandler` in `App.tsx` fires and bounces the browser to `shrt.fun/{code}` (the Render backend), which registers the click and performs the final 302 redirect. For the primary short-link flow, `shrt.fun/{code}` hits the backend directly with no React involved.
+
+---
+
+## Local Development
+
 ```bash
 bun install
 bun run dev
 ```
 
-### Production
-Verify compile typings and generate build distribution outputs:
+## Production Build
+
 ```bash
 bun run build
+# output → dist/
 ```
-Output files will be generated under `dist/`.
+
+Deployed automatically on Vercel on every push to `master`. The `client/vercel.json` sets:
+- `buildCommand: npm run build`
+- `outputDirectory: dist`
+- SPA catch-all rewrite to `/index.html` (fixes 404 on refresh)
