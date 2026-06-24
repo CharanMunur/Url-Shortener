@@ -1,6 +1,6 @@
 # Shrtn Server — Spring Boot API Backend
 
-The backend for [Shrtn](https://shrt.fun). Deployed on **Render** at `shrt.fun` — handles short-link redirects, click analytics, user auth, and OTP emails.
+The backend for [Shrtn](https://shrtn.fun). Deployed on **Render** at `shrtn.fun` — handles short-link redirects, click analytics, user auth, and OTP emails.
 
 ---
 
@@ -13,7 +13,7 @@ The backend for [Shrtn](https://shrt.fun). Deployed on **Render** at `shrt.fun` 
 | Auth | Spring Security + JWT (JJWT 0.12.6) |
 | Database | PostgreSQL (Supabase) via Spring Data JPA |
 | Cache | Redis (Upstash) via Spring Data Redis |
-| Email | Resend API (`noreply@shrt.fun`) via Java `HttpClient` |
+| Email | Resend API (`noreply@shrtn.fun`) via Java `HttpClient` |
 | User-Agent parsing | `ua-parser` (`com.github.ua-parser:uap-java`) |
 
 ---
@@ -32,7 +32,7 @@ The backend for [Shrtn](https://shrt.fun). Deployed on **Render** at `shrt.fun` 
 
 ### `service/ResendEmailService.java`
 - Calls the [Resend REST API](https://resend.com/docs/api-reference/emails/send-email) using Java's built-in `HttpClient` — no extra dependency
-- Sends from `noreply@shrt.fun`
+- Sends from `noreply@shrtn.fun`
 
 ### `security/`
 - `JwtAuthenticationFilter` — intercepts requests, validates Bearer tokens, populates `SecurityContext`
@@ -96,7 +96,7 @@ REDIS_PORT=          # Upstash Redis port (default 6379)
 REDIS_PASSWORD=      # Upstash Redis password
 JWT_SECRET=          # HMAC-SHA256 key (min 32 chars)
 RESEND_API_KEY=      # Resend API key (re_...)
-CORS_ALLOWED_ORIGINS=https://app.shrt.fun
+CORS_ALLOWED_ORIGINS=https://app.shrtn.fun
 ```
 
 `application.properties` reads all values from env — no hardcoded secrets.

@@ -1,14 +1,14 @@
 # Shrtn — URL Shortener
 
-A fast, full-stack URL shortener with click analytics, OTP-based auth, and a Redis-backed redirect engine. Live at **[app.shrt.fun](https://app.shrt.fun)** — short links resolve via **[shrt.fun](https://shrt.fun)**.
+A fast, full-stack URL shortener with click analytics, OTP-based auth, and a Redis-backed redirect engine. Live at **[app.shrtn.fun](https://app.shrtn.fun)** — short links resolve via **[shrtn.fun](https://shrtn.fun)**.
 
 ## Live URLs
 
 | Service | URL |
 |---|---|
-| Frontend (Dashboard) | [app.shrt.fun](https://app.shrt.fun) |
-| Short links | `shrt.fun/{code}` |
-| Backend API | [shrt.fun](https://shrt.fun) (Render) |
+| Frontend (Dashboard) | [app.shrtn.fun](https://app.shrtn.fun) |
+| Short links | `shrtn.fun/{code}` |
+| Backend API | [shrtn.fun](https://shrtn.fun) (Render) |
 
 ---
 
@@ -20,7 +20,7 @@ A fast, full-stack URL shortener with click analytics, OTP-based auth, and a Red
 | **Backend** | Java 25, Spring Boot 4, Spring Security (JWT) |
 | **Database** | PostgreSQL (Supabase) via Spring Data JPA |
 | **Cache** | Redis (Upstash) via Spring Data Redis |
-| **Email** | [Resend](https://resend.com) API (`noreply@shrt.fun`) |
+| **Email** | [Resend](https://resend.com) API (`noreply@shrtn.fun`) |
 | **Analytics** | [Umami](https://umami.is) (self-hosted analytics script) |
 | **Hosting** | Vercel (frontend) · Render (backend) |
 
@@ -30,10 +30,10 @@ A fast, full-stack URL shortener with click analytics, OTP-based auth, and a Red
 
 ### Redirect Flow
 
-Short links (`shrt.fun/{code}`) point directly to the Render backend — no frontend hop involved:
+Short links (`shrtn.fun/{code}`) point directly to the Render backend — no frontend hop involved:
 
 ```text
-User visits shrt.fun/{code}
+User visits shrtn.fun/{code}
         │
         ▼
   ┌───────────┐  Hit   ┌──────────────────┐
@@ -131,14 +131,14 @@ REDIS_PORT=          # Upstash Redis port
 REDIS_PASSWORD=      # Upstash Redis password
 JWT_SECRET=          # HMAC-SHA256 signing key
 RESEND_API_KEY=      # Resend API key (re_...)
-CORS_ALLOWED_ORIGINS=https://app.shrt.fun
+CORS_ALLOWED_ORIGINS=https://app.shrtn.fun
 ```
 
 ### Frontend (`client/.env`)
 
 ```env
-VITE_API_BASE_URL=https://shrt.fun
-VITE_PUBLIC_SHORT_URL_BASE=https://shrt.fun
+VITE_API_BASE_URL=https://shrtn.fun
+VITE_PUBLIC_SHORT_URL_BASE=https://shrtn.fun
 ```
 
 ---

@@ -1,13 +1,13 @@
 # Shrtn Client — React Frontend
 
-The React web app for [Shrtn](https://app.shrt.fun). Deployed on **Vercel** at `app.shrt.fun`.
+The React web app for [Shrtn](https://app.shrtn.fun). Deployed on **Vercel** at `app.shrtn.fun`.
 
 ## Features
 
 - **Auth flows** — sign-up, email OTP verification, login, forgot/reset password
 - **Dashboard** — overview stats, recent links, click totals
 - **My Links** — paginated table with toggle, copy, delete, analytics per link
-- **Shorten page** — paste a URL, get a `shrt.fun/{code}` link instantly
+- **Shorten page** — paste a URL, get a `shrtn.fun/{code}` link instantly
 - **Analytics** — browser/OS breakdowns, click timelines (Recharts)
 - **Theme** — light / dark / system toggle, persisted to localStorage
 - **Responsive** — desktop sidebar + mobile slide-out drawer
@@ -54,7 +54,7 @@ src/
 ├── providers/
 │   ├── auth-provider.tsx     # JWT session context (localStorage hydration)
 │   └── theme-provider.tsx    # Theme context wrapper
-├── App.tsx                   # Root router + RedirectHandler (shrt.fun/code fallback)
+├── App.tsx                   # Root router + RedirectHandler (shrtn.fun/code fallback)
 └── main.tsx                  # Entry point
 ```
 
@@ -65,8 +65,8 @@ src/
 Create `client/.env`:
 
 ```env
-VITE_API_BASE_URL=https://shrt.fun           # Render backend
-VITE_PUBLIC_SHORT_URL_BASE=https://shrt.fun  # Displayed in short link UI
+VITE_API_BASE_URL=https://shrtn.fun           # Render backend
+VITE_PUBLIC_SHORT_URL_BASE=https://shrtn.fun  # Displayed in short link UI
 ```
 
 For local development these default to `http://localhost:8080`.
@@ -75,7 +75,7 @@ For local development these default to `http://localhost:8080`.
 
 ## Redirect Architecture
 
-When a user visits `app.shrt.fun/{code}`, the `RedirectHandler` in `App.tsx` fires and bounces the browser to `shrt.fun/{code}` (the Render backend), which registers the click and performs the final 302 redirect. For the primary short-link flow, `shrt.fun/{code}` hits the backend directly with no React involved.
+When a user visits `app.shrtn.fun/{code}`, the `RedirectHandler` in `App.tsx` fires and bounces the browser to `shrtn.fun/{code}` (the Render backend), which registers the click and performs the final 302 redirect. For the primary short-link flow, `shrtn.fun/{code}` hits the backend directly with no React involved.
 
 ---
 
